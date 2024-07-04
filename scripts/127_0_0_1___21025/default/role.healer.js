@@ -1,16 +1,13 @@
-var prototypeCreep = require('prototype.creep');
+var healer = require('prototype.healer');
 
-var roleHealer = {
+const roleHealer = {
     run: function(creep) {
-        var target = creep.pos.findClosestByPath(FIND_MY_CREEPS, {
-            filter: (creep) => creep.hits < creep.hitsMax
-        });
-        if (target) {
-            if (creep.heal(target) == ERR_NOT_IN_RANGE) {
-                creep.moveTo(target);
-            }
+        if (creep.store.getFreeCapacity() > 0) {
+            creep.harvestEnergy(creep);
+        } else {
+            healer.performHealerTasks(creep);
         }
     }
 };
 
-module.exports = Object.assign({}, prototypeCreep, roleHealer);
+module.exports = roleHealer;

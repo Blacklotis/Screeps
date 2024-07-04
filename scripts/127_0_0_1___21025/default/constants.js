@@ -1,7 +1,7 @@
 module.exports = {
     MAX_WAIT_TICKS: 10,
-    MIN_HARVESTERS: 2,
-    MIN_BUILDERS: 5,
+    MIN_HARVESTERS: 3,
+    MIN_BUILDERS: 10,
     MIN_FIGHTERS: 0,
     MIN_HEALERS: 0,
     BUILDER_TIERS: [

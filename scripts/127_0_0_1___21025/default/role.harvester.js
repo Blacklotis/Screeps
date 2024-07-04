@@ -1,6 +1,6 @@
 var harvester = require('prototype.harvester');
 
-var roleHarvester = {
+const harvesterPrototype = {
     run: function(creep) {
         if (creep.store.getFreeCapacity() > 0) {
             creep.harvestEnergy(creep);
@@ -8,6 +8,6 @@ var roleHarvester = {
             harvester.performHarvesterTasks(creep);
         }
     }
-};
+}
 
-module.exports = roleHarvester;
+module.exports = harvesterPrototype;

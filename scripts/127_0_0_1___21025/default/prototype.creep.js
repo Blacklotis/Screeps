@@ -52,21 +52,31 @@ Creep.prototype.createExtensionNearLocation = function(location, radius) {
     return false;
 };
 
-Creep.prototype.idle = function(creep){
-        // Stay near the spawn
-        var waitArea = [
-            {x: spawn.pos.x - 1, y: spawn.pos.y - 1},
-            {x: spawn.pos.x, y: spawn.pos.y - 1},
-            {x: spawn.pos.x + 1, y: spawn.pos.y - 1},
-            {x: spawn.pos.x - 1, y: spawn.pos.y},
-            {x: spawn.pos.x + 1, y: spawn.pos.y},
-            {x: spawn.pos.x - 1, y: spawn.pos.y + 1},
-            {x: spawn.pos.x, y: spawn.pos.y + 1},
-            {x: spawn.pos.x + 1, y: spawn.pos.y + 1}
-        ];
-        var pos = waitArea[Math.floor(Math.random() * waitArea.length)];
-        this.moveTo(pos.x, pos.y);
-}
+Creep.prototype.idle = function() {
+    this.say('❌');
+
+    // Find the spawn in the same room as the creep
+    var spawn = this.room.find(FIND_MY_SPAWNS)[0];
+    if (!spawn) {
+        console.log('No spawn found in room:', this.room.name);
+        return;
+    }
+
+    var waitArea = [
+        {x: spawn.pos.x - 1, y: spawn.pos.y - 1},
+        {x: spawn.pos.x, y: spawn.pos.y - 1},
+        {x: spawn.pos.x + 1, y: spawn.pos.y - 1},
+        {x: spawn.pos.x - 1, y: spawn.pos.y},
+        {x: spawn.pos.x + 1, y: spawn.pos.y},
+        {x: spawn.pos.x - 1, y: spawn.pos.y + 1},
+        {x: spawn.pos.x, y: spawn.pos.y + 1},
+        {x: spawn.pos.x + 1, y: spawn.pos.y + 1}
+    ];
+
+    var pos = waitArea[Math.floor(Math.random() * waitArea.length)];
+    this.moveTo(new RoomPosition(pos.x, pos.y, this.room.name));
+};
+
 
 Creep.prototype.harvestEnergy = function(creep) {
     var source = creep.pos.findClosestByPath(FIND_SOURCES);
@@ -100,7 +110,7 @@ Creep.prototype.harvestEnergy = function(creep) {
     }
 };
 
-Creep.prototype.getClosestSource = function(source1, source2, targetPos) {
+Creep.prototype.getCloserSource = function(source1, source2, targetPos) {
     const range1 = targetPos.getRangeTo(source1.pos);
     const range2 = targetPos.getRangeTo(source2.pos);
     return range1 < range2 ? source1 : source2;
