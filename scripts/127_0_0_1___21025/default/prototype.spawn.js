@@ -18,7 +18,7 @@ StructureSpawn.prototype.manageSpawning = function() {
             var fighters = _.filter(Game.creeps, (creep) => creep.memory.role == 'fighter');
 
             if (harvesters.length < MIN_HARVESTERS) {
-                this.spawnCustomCreep([WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE], 'Harvester', 'harvester');
+                this.spawnCustomCreep([WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE], 'Harvester', 'harvester');
             } else if (builders.length <= MIN_BUILDERS) {
                 this.spawnCustomCreep([WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE], 'Builder', 'builder');
             } else if (fighters.length < MIN_FIGHTERS) {

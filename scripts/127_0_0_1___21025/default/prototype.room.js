@@ -1,3 +1,25 @@
+Room.prototype.drawRoadConstructionSites = function(onOff) {
+    const constructionSites = this.find(FIND_CONSTRUCTION_SITES, {
+        filter: { structureType: STRUCTURE_ROAD }
+    });
+
+    if (onOff) {
+        for (const site of constructionSites) {
+            this.visual.circle(site.pos, {
+                fill: 'transparent',
+                radius: 0.35,
+                stroke: '#ffaa00'
+            });
+            this.visual.text('🚧', site.pos.x, site.pos.y + 0.25, {
+                font: 0.5,
+                stroke: '#000000',
+                strokeWidth: 0.1,
+                background: '#ffaa00'
+            });
+        }
+    }
+};
+
 Room.prototype.findBuildableSquares = function(top, left, bottom, right) {
     const look = this.lookForAtArea(LOOK_STRUCTURES, top, left, bottom, right, true);
     const lookConstructionSites = this.lookForAtArea(LOOK_CONSTRUCTION_SITES, top, left, bottom, right, true);
@@ -72,4 +94,22 @@ Room.prototype.buildAllCurrentRoads = function() {
     if (controller) {
         createRoadConstructionSites(spawn.pos, controller.pos);
     }
+};
+
+Room.prototype.createExtensionsSurroundingLocation = function(location, radius) {
+    var positions = [];
+    for (var dx = -radius; dx <= radius; dx++) {
+        for (var dy = -radius; dy <= radius; dy++) {
+            if (dx !== 0 || dy !== 0) {
+                positions.push({x: location.x + dx, y: location.y + dy});
+            }
+        }
+    }
+
+    for (var pos of positions) {
+        if (this.room.createConstructionSite(pos.x, pos.y, STRUCTURE_EXTENSION) == OK) {
+            return true;
+        }
+    }
+    return false;
 };

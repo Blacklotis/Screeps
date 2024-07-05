@@ -4,14 +4,8 @@ var roleFighter = require('role.fighter');
 var roleHealer = require('role.healer');
 var roleTower = require('role.tower');
 require('prototype.spawn');
-require('prototype.creep');
-require('prototype.harvester');
-require('prototype.healer');
 require('prototype.room');
-const constants = require('constants');
-
-// Set the minimum number of each creep type
-const { MIN_HARVESTERS, MIN_BUILDERS, MIN_FIGHTERS, MIN_HEALERS, HARVESTER_TIERS, BUILDER_TIERS } = constants;
+const { OVERLAY_CONSTRUCTION, MIN_HARVESTERS, MIN_BUILDERS, MIN_FIGHTERS, MIN_HEALERS, HARVESTER_TIERS, BUILDER_TIERS } = require('constants');
 
 function removeAllRoads(roomName) {
     const room = Game.rooms[roomName];
@@ -48,17 +42,20 @@ module.exports.loop = function () {
         Game.spawns[spawnName].clearDeadCreepMemory();
     }
 
-    // Initialize memory properties for all creeps
+    // Initialize state for all creeps if not already set
     for (var name in Game.creeps) {
         var creep = Game.creeps[name];
-        if (!creep.memory.waitTicks) {
-            creep.memory.waitTicks = 0;
-        }
-        if (!creep.memory.lastSourceId) {
-            creep.memory.lastSourceId = null;
+        if (!creep.memory.state) {
+            creep.memory.state = '🌽';
         }
     }
 
+    // Draw road construction sites for each room
+    for (const roomName in Game.rooms) {
+        const room = Game.rooms[roomName];
+        room.drawRoadConstructionSites(OVERLAY_CONSTRUCTION);
+    }
+    
     // Creep logic
     for (var name in Game.creeps) {
         var creep = Game.creeps[name];

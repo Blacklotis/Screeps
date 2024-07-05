@@ -1,38 +1,51 @@
 const { MAX_WAIT_TICKS } = require('constants');
 
+Creep.prototype.buildAllPlannedRoads = function() {
+    const terrain = this.room.getTerrain();
+
+    // Find all road construction sites in the room
+    const roadConstructionSites = this.room.find(FIND_CONSTRUCTION_SITES, {
+        filter: (site) => site.structureType === STRUCTURE_ROAD
+    });
+
+    if (roadConstructionSites.length > 0) {
+        const target = this.pos.findClosestByPath(roadConstructionSites, {
+            filter: (site) => terrain.get(site.pos.x, site.pos.y) !== TERRAIN_MASK_WALL // Avoid wall terrain
+        });
+
+        if (target && this.build(target) === ERR_NOT_IN_RANGE) {
+            this.moveTo(target);
+        }
+        return true; // Builder is working on roads
+    }
+
+    return false; // No road construction sites to build
+};
+
 const builderPrototype = {
-    performConstructionTasks: function(creep) {
-        var spawn = creep.room.find(FIND_MY_SPAWNS)[0];
+    serviceController: function(creep) {
         var controller = creep.room.controller;
 
-        // Priority: Upgrade controller if it is close to downgrading
-        if (controller && controller.ticksToDowngrade < 10000) {
+        if (controller) {
             if (creep.upgradeController(controller) == ERR_NOT_IN_RANGE) {
                 creep.moveTo(controller);
                 creep.say('⚡');
             }
-            return;
+            return true;
         }
+        return false;
+    },
 
-        // Task 1: Highest priority - Get energy if needed
-        if (creep.store.getFreeCapacity() > 0) {
-            var source = creep.pos.findClosestByPath(FIND_SOURCES);
-            if (source) {
-                if (creep.harvest(source) == ERR_NOT_IN_RANGE) {
-                    creep.moveTo(source);
-                    creep.say('🔄');
-                }
-            }
-            return;
-        }
-
-        // Task 2: Build all planned roads in the room
+    buildRoadsTask: function(creep) {
         if (this.buildAllPlannedRoads(creep)) {
             creep.say('🚧🛣️');
-            return;
+            return true;
         }
+        return false;
+    },
 
-        // Task 3: Prioritize building extensions only if there are no roads to be built
+    buildExtensionsTask: function(creep) {
+        var spawn = creep.room.find(FIND_MY_SPAWNS)[0];
         var maxExtensions = this.getMaxExtensions(creep.room.controller.level);
         var existingExtensions = creep.room.find(FIND_MY_STRUCTURES, {
             filter: { structureType: STRUCTURE_EXTENSION }
@@ -48,60 +61,40 @@ const builderPrototype = {
             if (extensionConstructionSite) {
                 if (creep.build(extensionConstructionSite) == ERR_NOT_IN_RANGE) {
                     creep.moveTo(extensionConstructionSite);
-                    creep.say('🔋');
+                    creep.say('🚧x');
                 }
-                return;
+                return true;
             } else {
                 creep.createExtensionNearLocation(spawn.pos, 1);
-                creep.say('🚧🔋');
-                return;
+                creep.say('🚧x');
+                return true;
             }
         }
+        return false;
+    },
 
-        // Task 4: If no extensions, try to build other construction sites
+    buildOtherConstructionSitesTask: function(creep) {
         var constructionSite = creep.pos.findClosestByPath(FIND_CONSTRUCTION_SITES);
         if (constructionSite) {
             if (creep.build(constructionSite) == ERR_NOT_IN_RANGE) {
                 creep.moveTo(constructionSite);
                 creep.say('🚧');
             }
-            return;
+            return true;
         }
+        return false;
+    },
 
-        // Task 5: If no construction sites, try to repair structures
+    repairStructuresTask: function(creep) {
         var target = creep.pos.findClosestByPath(FIND_STRUCTURES, {
             filter: (structure) => structure.hits < structure.hitsMax
         });
         if (target && creep.repair(target) == ERR_NOT_IN_RANGE) {
             creep.moveTo(target);
             creep.say('🔧');
-            return;
+            return true;
         }
-
-        // Default action if no other tasks are found
-        creep.say('🛑');
-    },
-
-    buildAllPlannedRoads: function(creep) {
-        const terrain = creep.room.getTerrain();
-
-        // Find all road construction sites in the room
-        const roadConstructionSites = creep.room.find(FIND_CONSTRUCTION_SITES, {
-            filter: (site) => site.structureType === STRUCTURE_ROAD
-        });
-
-        if (roadConstructionSites.length > 0) {
-            const target = creep.pos.findClosestByPath(roadConstructionSites, {
-                filter: (site) => terrain.get(site.pos.x, site.pos.y) !== TERRAIN_MASK_WALL // Avoid wall terrain
-            });
-
-            if (target && creep.build(target) === ERR_NOT_IN_RANGE) {
-                creep.moveTo(target);
-            }
-            return true; // Builder is working on roads
-        }
-
-        return false; // No road construction sites to build
+        return false;
     },
 
     buildRoad: function(creep, fromPos, toPos) {

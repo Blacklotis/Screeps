@@ -1,4 +1,19 @@
-const { MAX_WAIT_TICKS } = require('constants');
+const { MAX_WAIT_TICKS, DEBUGGING } = require('constants');
+
+const states = {
+    ATTACKING: '⚔️',
+    BUILDING: '🚧',
+    FUEL_CONTROLLER: '⚡',
+    FUEL_EXTENSIONS: '🔋',
+    FUEL_SPAWN: '🏠',
+    HARVEST_ENERGY: '🌽',
+    HEALING: '❤️‍🩹',
+    IDLE: '❌',
+    REPAIRING: '🔧',
+    UPGRADING: '⚡',
+};
+
+Creep.prototype.states = states;
 
 Creep.prototype.checkWaitTicks = function(sourceId) {
     if (!this.memory.waitTicks) {
@@ -34,88 +49,32 @@ Creep.prototype.checkWaitTicks = function(sourceId) {
     return this.memory.waitTicks;
 };
 
-Creep.prototype.createExtensionNearLocation = function(location, radius) {
-    var positions = [];
-    for (var dx = -radius; dx <= radius; dx++) {
-        for (var dy = -radius; dy <= radius; dy++) {
-            if (dx !== 0 || dy !== 0) {
-                positions.push({x: location.x + dx, y: location.y + dy});
-            }
-        }
-    }
-
-    for (var pos of positions) {
-        if (this.room.createConstructionSite(pos.x, pos.y, STRUCTURE_EXTENSION) == OK) {
-            return true;
-        }
-    }
-    return false;
-};
-
 Creep.prototype.idle = function() {
-    this.say('❌');
+    this.memory.state = this.states.IDLE;
+    this.say(this.states.IDLE);
+}
 
-    // Find the spawn in the same room as the creep
-    var spawn = this.room.find(FIND_MY_SPAWNS)[0];
-    if (!spawn) {
-        console.log('No spawn found in room:', this.room.name);
-        return;
-    }
-
-    var waitArea = [
-        {x: spawn.pos.x - 1, y: spawn.pos.y - 1},
-        {x: spawn.pos.x, y: spawn.pos.y - 1},
-        {x: spawn.pos.x + 1, y: spawn.pos.y - 1},
-        {x: spawn.pos.x - 1, y: spawn.pos.y},
-        {x: spawn.pos.x + 1, y: spawn.pos.y},
-        {x: spawn.pos.x - 1, y: spawn.pos.y + 1},
-        {x: spawn.pos.x, y: spawn.pos.y + 1},
-        {x: spawn.pos.x + 1, y: spawn.pos.y + 1}
-    ];
-
-    var pos = waitArea[Math.floor(Math.random() * waitArea.length)];
-    this.moveTo(new RoomPosition(pos.x, pos.y, this.room.name));
-};
-
-
-Creep.prototype.harvestEnergy = function(creep) {
-    var source = creep.pos.findClosestByPath(FIND_SOURCES);
-
-    if (source) {
-        creep.checkWaitTicks(source.id);
-
-        if (creep.memory.waitTicks > MAX_WAIT_TICKS) {
-            // Find a new source if the builder has been waiting for more than MAX_WAIT_TICKS
-            var sources = creep.room.find(FIND_SOURCES);
-            for (var i in sources) {
-                if (sources[i].id != creep.memory.lastSourceId) {
-                    source = sources[i];
-                    if (creep.harvest(source) == ERR_NOT_IN_RANGE) {
-                        creep.moveTo(source);
-                        creep.say('🔄');
-                    }
-                    creep.memory.waitTicks = 0;
-                    creep.memory.lastSourceId = source.id;
-                    return;
-                }
-            }
-        } else {
-            if (creep.harvest(source) == ERR_NOT_IN_RANGE) {
-                creep.moveTo(source);
-                creep.say('🔄');
-            }
-            creep.memory.lastSourceId = source.id;
-            creep.memory.waitTicks = 0;
-        }
+Creep.prototype.talk = function() {
+    if (this.memory.state && this.states[this.memory.state]) {
+        this.say(this.states[this.memory.state]);
+    } else {
+        console.log(JSON.stringify(this.memory));
     }
 };
 
-Creep.prototype.getCloserSource = function(source1, source2, targetPos) {
-    const range1 = targetPos.getRangeTo(source1.pos);
-    const range2 = targetPos.getRangeTo(source2.pos);
-    return range1 < range2 ? source1 : source2;
+Creep.prototype.harvestEnergy = function() {
+    var source = this.pos.findClosestByPath(FIND_SOURCES);
+    if (this.harvest(source) == ERR_NOT_IN_RANGE) {
+        this.moveTo(source);
+    }
+    //this.memory.lastSourceId = source.id;
+    //this.memory.waitTicks = 0;
+    return true;
 };
 
+Creep.prototype.getCloserSource = function(source1, source2, ourPosition) {
+    return ourPosition.getRangeTo(source1.pos) < ourPosition.getRangeTo(source2.pos) ? source1 : source2;
+};
 
 Creep.prototype.clearUnusedRoadConstructionSites = function() {
     const constructionSites = this.room.find(FIND_CONSTRUCTION_SITES, {
