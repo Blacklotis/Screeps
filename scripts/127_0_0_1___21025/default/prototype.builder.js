@@ -1,25 +1,45 @@
 const { MAX_WAIT_TICKS } = require('constants');
 
-Creep.prototype.buildAllPlannedRoads = function() {
+Creep.prototype.buildAllPlannedRoads = function(shouldBuildTunnels) {
     const terrain = this.room.getTerrain();
 
-    // Find all road construction sites in the room
     const roadConstructionSites = this.room.find(FIND_CONSTRUCTION_SITES, {
         filter: (site) => site.structureType === STRUCTURE_ROAD
     });
 
     if (roadConstructionSites.length > 0) {
-        const target = this.pos.findClosestByPath(roadConstructionSites, {
-            filter: (site) => terrain.get(site.pos.x, site.pos.y) !== TERRAIN_MASK_WALL // Avoid wall terrain
-        });
+        var target;
+
+        if (shouldBuildTunnels) {
+            target = this.room.find(FIND_CONSTRUCTION_SITES, {
+                filter: (site) => site.structureType === STRUCTURE_ROAD
+            });
+        } else {
+            const terrainType = terrain.get(site.pos.x, site.pos.y);
+            target = this.pos.findClosestByPath(roadConstructionSites, {
+                filter: (site) => terrainType !== TERRAIN_MASK_WALL
+                && terrainType !== TERRAIN_MASK_SWAMP
+            });
+        } 
 
         if (target && this.build(target) === ERR_NOT_IN_RANGE) {
             this.moveTo(target);
         }
-        return true; // Builder is working on roads
+        return true;
     }
 
-    return false; // No road construction sites to build
+    return false;
+};
+
+Creep.prototype.repairStructuresTask = function() {
+    var target = this.pos.findClosestByPath(FIND_STRUCTURES, {
+        filter: (structure) => structure.hits < structure.hitsMax
+    });
+    if (target && this.repair(target) == ERR_NOT_IN_RANGE) {
+        this.moveTo(target);
+        return true;
+    }
+    return false;
 };
 
 const builderPrototype = {
@@ -80,18 +100,6 @@ const builderPrototype = {
                 creep.moveTo(constructionSite);
                 creep.say('🚧');
             }
-            return true;
-        }
-        return false;
-    },
-
-    repairStructuresTask: function(creep) {
-        var target = creep.pos.findClosestByPath(FIND_STRUCTURES, {
-            filter: (structure) => structure.hits < structure.hitsMax
-        });
-        if (target && creep.repair(target) == ERR_NOT_IN_RANGE) {
-            creep.moveTo(target);
-            creep.say('🔧');
             return true;
         }
         return false;

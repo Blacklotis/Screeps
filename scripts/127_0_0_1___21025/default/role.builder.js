@@ -4,24 +4,11 @@ var roleBuilder = {
     run: function(creep) {
         // Before we act we need to be full on energy
         if (this.refillEnergy(creep)) {
-
-            // Lets check for what needs to bhe built
-            // Find all road construction sites in the room
-            var roadJobs = creep.room.find(FIND_CONSTRUCTION_SITES, {
-                filter: (site) => site.structureType === STRUCTURE_ROAD
-            });
-            
-            console.log(JSON.stringify(roadJobs));
-
-            if(roadJobs.length > 0){
-                creep.memory.state = creep.states.BUILDING;
-            } else {
-                creep.memory.state = creep.states.FUEL_CONTROLLER; 
-            }
+            this.chooseTask(creep);
         }
         
         this.takeAction(creep);
-        //creep.talk();
+        creep.talk();
     },
 
     refillEnergy: function(creep) {
@@ -38,6 +25,14 @@ var roleBuilder = {
         return false;
     },
 
+    chooseTask: function(creep) {
+        if (creep.room.findBuildingsNeedingRepair().length > 0) {
+            creep.memory.state = creep.states.REPAIRING;
+        } else {
+            creep.memory.state = creep.states.FUEL_CONTROLLER;  
+        }
+    },
+    
     takeAction: function(creep) {
         switch (creep.memory.state) {
             case creep.states.HARVEST_ENERGY:
@@ -55,10 +50,8 @@ var roleBuilder = {
                     creep.buildAllPlannedRoads();
                 }
                 break;
-            case creep.states.FUEL_SPAWN:
-                if (creep.store[RESOURCE_ENERGY] != 0) {
-                    creep.fuelSpawn();
-                }
+            case creep.states.REPAIRING:
+                creep.repairStructuresTask();
                 break;
         }
     }

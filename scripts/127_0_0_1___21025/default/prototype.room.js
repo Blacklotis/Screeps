@@ -113,3 +113,33 @@ Room.prototype.createExtensionsSurroundingLocation = function(location, radius) 
     }
     return false;
 };
+
+Room.prototype.removeAllRoads = function() {
+    // Remove all roads
+    const roads = this.find(FIND_STRUCTURES, {
+        filter: (structure) => structure.structureType === STRUCTURE_ROAD
+    });
+    for (const road of roads) {
+        road.destroy();
+    }
+    console.log(`Removed ${roads.length} roads.`);
+    return;
+};
+
+Room.prototype.removeAllRoadPlans = function() {
+    // Remove all road construction sites
+    const roadConstructionSites = this.find(FIND_CONSTRUCTION_SITES, {
+        filter: (site) => site.structureType === STRUCTURE_ROAD
+    });
+    for (const site of roadConstructionSites) {
+        site.remove();
+    }
+    console.log(`Removed ${roadConstructionSites.length} road construction sites.`);
+    return;
+};
+
+Room.prototype.findBuildingsNeedingRepair = function() {
+    return this.find(FIND_STRUCTURES, {
+        filter: (structure) => structure.hits < structure.hitsMax
+    });
+};

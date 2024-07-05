@@ -1,5 +1,5 @@
 module.exports = {
-    OVERLAY_CONSTRUCTION: true,
+    OVERLAY_ROAD_CONSTRUCTION: false,
     DEBUGGING: true,
     MAX_WAIT_TICKS: 10,
     MIN_HARVESTERS: 3,

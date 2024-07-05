@@ -1,36 +1,18 @@
 const { DEBUGGING } = require('constants');
-var harvester = require('prototype.harvester');
+require('prototype.harvester');
 
 const roleHarvester = {
     run: function(creep) {
         //console.log('RESOURCE_ENERGY: ', creep.store[RESOURCE_ENERGY]);
         //console.log('getFreeCapacity: ', creep.store.getFreeCapacity());
 
-        // Before we act we ned to be full on energy
+        // Before we act we need to be full on energy
         if (this.refillEnergy(creep)) {
-            // If we have empty extensions, lets fill them up
-            var numberOfEmptyExtensions = creep.room.find(FIND_MY_STRUCTURES, {
-                filter: (structure) => {
-                    return (structure.structureType == STRUCTURE_EXTENSION) &&
-                            structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
-                }}).length;
-
-            if (numberOfEmptyExtensions > 0) {
-                creep.memory.state = creep.states.FUEL_EXTENSIONS;
-            } else {
-                // If a spawn isnt full, lets fill them up
-                var spawn = creep.room.find(FIND_MY_SPAWNS)[0];
-                if (spawn && spawn.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
-                    creep.memory.state = creep.states.FUEL_SPAWN;
-                } else {
-                    // Otherwise, let's continue working on the controller
-                    creep.memory.state = creep.states.FUEL_CONTROLLER;  
-                }
-            }
+            this.chooseTask(creep);
         }
 
         this.takeAction(creep);
-        //creep.talk();
+        creep.talk();
     },
 
     refillEnergy: function(creep) {
@@ -45,6 +27,28 @@ const roleHarvester = {
         }  
 
         return false;
+    },
+
+    chooseTask: function(creep) {
+        // If we have empty extensions, lets fill them up
+        var numberOfEmptyExtensions = creep.room.find(FIND_MY_STRUCTURES, {
+            filter: (structure) => {
+                return (structure.structureType == STRUCTURE_EXTENSION) &&
+                        structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
+            }}).length;
+
+        if (numberOfEmptyExtensions > 0) {
+            creep.memory.state = creep.states.FUEL_EXTENSIONS;
+        } else {
+            // If a spawn isnt full, lets fill them up
+            var spawn = creep.room.find(FIND_MY_SPAWNS)[0];
+            if (spawn && spawn.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
+                creep.memory.state = creep.states.FUEL_SPAWN;
+            } else {
+                // Otherwise, let's continue working on the controller
+                creep.memory.state = creep.states.FUEL_CONTROLLER;  
+            }
+        }
     },
 
     takeAction: function(creep) {

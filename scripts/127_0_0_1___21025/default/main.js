@@ -5,33 +5,7 @@ var roleHealer = require('role.healer');
 var roleTower = require('role.tower');
 require('prototype.spawn');
 require('prototype.room');
-const { OVERLAY_CONSTRUCTION, MIN_HARVESTERS, MIN_BUILDERS, MIN_FIGHTERS, MIN_HEALERS, HARVESTER_TIERS, BUILDER_TIERS } = require('constants');
-
-function removeAllRoads(roomName) {
-    const room = Game.rooms[roomName];
-    if (!room) {
-        console.log(`Room ${roomName} not found.`);
-        return;
-    }
-
-    // Remove all road construction sites
-    const roadConstructionSites = room.find(FIND_CONSTRUCTION_SITES, {
-        filter: (site) => site.structureType === STRUCTURE_ROAD
-    });
-    for (const site of roadConstructionSites) {
-        site.remove();
-    }
-    console.log(`Removed ${roadConstructionSites.length} road construction sites.`);
-
-    // Remove all roads
-    const roads = room.find(FIND_STRUCTURES, {
-        filter: (structure) => structure.structureType === STRUCTURE_ROAD
-    });
-    for (const road of roads) {
-        road.destroy();
-    }
-    console.log(`Removed ${roads.length} roads.`);
-}
+const { OVERLAY_ROAD_CONSTRUCTION, MIN_HARVESTERS, MIN_BUILDERS, MIN_FIGHTERS, MIN_HEALERS, HARVESTER_TIERS, BUILDER_TIERS } = require('constants');
 
 module.exports.loop = function () {
 
@@ -53,7 +27,7 @@ module.exports.loop = function () {
     // Draw road construction sites for each room
     for (const roomName in Game.rooms) {
         const room = Game.rooms[roomName];
-        room.drawRoadConstructionSites(OVERLAY_CONSTRUCTION);
+        room.drawRoadConstructionSites(OVERLAY_ROAD_CONSTRUCTION);
     }
     
     // Creep logic
