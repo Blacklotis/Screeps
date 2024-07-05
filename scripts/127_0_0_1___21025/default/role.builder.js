@@ -51,7 +51,9 @@ var roleBuilder = {
                 }
                 break;
             case creep.states.REPAIRING:
-                creep.repairStructuresTask();
+                if(!creep.repairStructuresTask()) {
+                    this.chooseTask(creep);
+                };
                 break;
         }
     }

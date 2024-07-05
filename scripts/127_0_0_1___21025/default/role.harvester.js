@@ -64,13 +64,13 @@ const roleHarvester = {
                 }
                 break;
             case creep.states.FUEL_EXTENSIONS:
-                if (creep.store[RESOURCE_ENERGY] != 0) {
-                    creep.fuelExtensions();
+                if (!creep.fuelExtensions()) {
+                    this.chooseTask(creep);
                 }
                 break;
             case creep.states.FUEL_SPAWN:
-                if (creep.store[RESOURCE_ENERGY] != 0) {
-                    creep.fuelSpawn();
+                if (!creep.fuelSpawn()) {
+                    this.chooseTask(creep);
                 }
                 break;
         }
