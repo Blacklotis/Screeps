@@ -1,5 +1,4 @@
 const { DEBUGGING } = require('constants');
-require('prototype.creep');
 
 Creep.prototype.fuelController = function() {
     var controller = this.room.controller;
