@@ -2,13 +2,12 @@ var builder = require('prototype.builder');
 
 var roleBuilder = {
     run: function(creep) {
-        // Before we act we need to be full on energy
         if (this.refillEnergy(creep)) {
             this.chooseTask(creep);
         }
         
         this.takeAction(creep);
-        creep.talk();
+        //creep.talk();
     },
 
     refillEnergy: function(creep) {
@@ -26,10 +25,14 @@ var roleBuilder = {
     },
 
     chooseTask: function(creep) {
-        if (creep.room.findBuildingsNeedingRepair().length > 0) {
+        if (creep.room.getBuilderWorkExtensions() > 0) {
+            creep.memory.state = creep.states.BUILD_EXTENSIONS;
+        } else if (creep.room.getBuilderWorkRoads() > 0) {
+            creep.memory.state = creep.states.BUILD_ROADS;
+        } else if (creep.room.getBuilderWorkRepair().length > 0) {
             creep.memory.state = creep.states.REPAIRING;
         } else {
-            creep.memory.state = creep.states.FUEL_CONTROLLER;  
+            creep.memory.state = creep.states.CHARGE_CONTROLLER;  
         }
     },
     
@@ -40,23 +43,34 @@ var roleBuilder = {
                     creep.harvestEnergy();
                 }
                 break;
-            case creep.states.FUEL_CONTROLLER:
+            case creep.states.CHARGE_CONTROLLER:
                 if (creep.store[RESOURCE_ENERGY] != 0) {
-                    creep.fuelController();
+                    creep.chargeController();
                 }
                 break;
-            case creep.states.BUILDING:
-                if (creep.store[RESOURCE_ENERGY] != 0) {
-                    creep.buildAllPlannedRoads();
-                }
+            case creep.states.BUILD_ROADS:
+                if(!creep.buildRoads()) {
+                    this.chooseTask(creep);
+                };
+                break;
+            case creep.states.BUILD_EXTENSIONS:
+                if(!creep.buildExtensions()) {
+                    this.chooseTask(creep);
+                };
+                break;
+            case creep.states.BUILD_SPAWN:
+                if(!creep.getBuilderWorkSpawn()) {
+                    this.chooseTask(creep);
+                };
                 break;
             case creep.states.REPAIRING:
-                if(!creep.repairStructuresTask()) {
+                if(!creep.repairStructures()) {
                     this.chooseTask(creep);
                 };
                 break;
         }
     }
+    
 };
 
 module.exports = roleBuilder;

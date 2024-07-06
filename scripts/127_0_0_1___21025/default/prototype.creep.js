@@ -1,11 +1,24 @@
 const { MAX_WAIT_TICKS, DEBUGGING } = require('constants');
 
-const states = {
-    ATTACKING: '⚔️',
-    BUILDING: '🚧',
-    FUEL_CONTROLLER: '⚡',
-    FUEL_EXTENSIONS: '🔋',
-    FUEL_SPAWN: '🏠',
+Creep.prototype.bodypartCosts = {
+    TOUGH: 10,
+    MOVE: 50,
+    CARRY: 50,
+    HEAL: 50,
+    ATTACK: 80,
+    WORK: 100,
+    RANGED_ATTACK: 150,
+    CLAIM: 600,
+};
+
+Creep.prototype.states = {
+    ATTACK: '⚔️',
+    BUILD_EXTENSIONS: '🚧🔋',
+    BUILD_ROADS: '🚧🛣️',
+    BUILD_SPAWN: '🚧🏠',
+    CHARGE_CONTROLLER: '⚡',
+    CHARGE_EXTENSIONS: '🔋',
+    CHARGE_SPAWN: '🏠',
     HARVEST_ENERGY: '🌽',
     HEALING: '❤️‍🩹',
     IDLE: '❌',
@@ -13,7 +26,17 @@ const states = {
     UPGRADING: '⚡',
 };
 
-Creep.prototype.states = states;
+Creep.prototype.calculateRequiredMoveParts = function(body) {
+    let fatigue = 0;
+
+    body.forEach(part => {
+        if (part !== MOVE) {
+            fatigue += FATIGUE_GENERATED_BY_PART[part];
+        }
+    });
+
+    return Math.ceil(fatigue / -FATIGUE_GENERATED_BY_PART.MOVE);
+};
 
 Creep.prototype.checkWaitTicks = function(sourceId) {
     if (!this.memory.waitTicks) {
@@ -63,25 +86,30 @@ Creep.prototype.talk = function() {
 };
 
 Creep.prototype.harvestEnergy = function() {
-    var source = this.pos.findClosestByPath(FIND_SOURCES);
-    if (this.harvest(source) == ERR_NOT_IN_RANGE) {
-        this.moveTo(source);
+    var source = this.pos.findClosestByPath(FIND_SOURCES_ACTIVE);
+    if (source) {
+        if (this.harvest(source) == ERR_NOT_IN_RANGE) {
+            this.moveTo(source);
+        }
+        this.memory.lastSourceId = source.id;
+        this.memory.waitTicks = 0;
+        return true;
     }
-    //this.memory.lastSourceId = source.id;
-    //this.memory.waitTicks = 0;
-    return true;
 };
+
 
 Creep.prototype.getCloserSource = function(source1, source2, ourPosition) {
     return ourPosition.getRangeTo(source1.pos) < ourPosition.getRangeTo(source2.pos) ? source1 : source2;
 };
 
-Creep.prototype.clearUnusedRoadConstructionSites = function() {
-    const constructionSites = this.room.find(FIND_CONSTRUCTION_SITES, {
-        filter: (site) => site.structureType === STRUCTURE_ROAD && site.progress === 0
-    });
+Creep.prototype.chargeController = function() {
+    var controller = this.room.controller;
 
-    for (const site of constructionSites) {
-        site.remove();
+    if (controller) {
+        if (this.upgradeController(controller) == ERR_NOT_IN_RANGE) {
+            this.moveTo(controller);
+        }
+        return true;
     }
+    return false;
 };

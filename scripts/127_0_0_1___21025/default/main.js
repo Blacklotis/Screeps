@@ -9,13 +9,6 @@ const { OVERLAY_ROAD_CONSTRUCTION, MIN_HARVESTERS, MIN_BUILDERS, MIN_FIGHTERS, M
 
 module.exports.loop = function () {
 
-    //removeAllRoads('W2N5');
-    
-    // Clear memory of dead creeps
-    for (var spawnName in Game.spawns) {
-        Game.spawns[spawnName].clearDeadCreepMemory();
-    }
-
     // Initialize state for all creeps if not already set
     for (var name in Game.creeps) {
         var creep = Game.creeps[name];
@@ -24,10 +17,12 @@ module.exports.loop = function () {
         }
     }
 
-    // Draw road construction sites for each room
-    for (const roomName in Game.rooms) {
-        const room = Game.rooms[roomName];
-        room.drawRoadConstructionSites(OVERLAY_ROAD_CONSTRUCTION);
+    for (const name in Game.rooms) {
+        const room = Game.rooms[name];
+        room.planExpanders();
+        //room.clearPlannedExpanders();
+        //room.planRoadConstruction();
+        //room.clearRoadConstruction();
     }
     
     // Creep logic
@@ -54,11 +49,5 @@ module.exports.loop = function () {
     var towers = _.filter(Game.structures, (s) => s.structureType == STRUCTURE_TOWER);
     for (var tower of towers) {
         roleTower.run(tower);
-    }
-
-    // Build all roads in each room
-    for (let roomName in Game.rooms) {
-        let room = Game.rooms[roomName];
-        room.buildAllCurrentRoads();
     }
 };

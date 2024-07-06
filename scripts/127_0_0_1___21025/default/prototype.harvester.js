@@ -1,18 +1,6 @@
 const { DEBUGGING } = require('constants');
 
-Creep.prototype.fuelController = function() {
-    var controller = this.room.controller;
-
-    if (controller) {
-        if (this.upgradeController(controller) == ERR_NOT_IN_RANGE) {
-            this.moveTo(controller);
-        }
-        return true;
-    }
-    return false;
-};
-
-Creep.prototype.fuelSpawn = function() {
+Creep.prototype.chargeSpawn = function() {
     var spawn = this.room.find(FIND_MY_SPAWNS)[0];
     if (this.transfer(spawn, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
         this.moveTo(spawn);
@@ -21,7 +9,7 @@ Creep.prototype.fuelSpawn = function() {
     return false;
 }
 
-Creep.prototype.fuelExtensions = function() {
+Creep.prototype.chargeExtensions = function() {
     var extensions = [];
     for (var spawnName in Game.spawns) {
         extensions = extensions.concat(Game.spawns[spawnName].getExtensions());
@@ -37,14 +25,3 @@ Creep.prototype.fuelExtensions = function() {
     }
     return false;
 }
-
-Creep.prototype.extensionsNeedEnergy = function() {
-    var extensions = this.room.find(FIND_MY_STRUCTURES, {
-        filter: (structure) => {
-            return (structure.structureType == STRUCTURE_EXTENSION) &&
-                   structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
-        }
-    });
-
-    return extensions.length > 0;
-};
