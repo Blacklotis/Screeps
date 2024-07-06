@@ -5,6 +5,7 @@ var roleHealer = require('role.healer');
 var roleTower = require('role.tower');
 require('prototype.spawn');
 require('prototype.room');
+require('prototype.roomPosition');
 const { DEBUGGING, OVERLAY_ROAD_CONSTRUCTION, MIN_HARVESTERS, MIN_BUILDERS, MIN_FIGHTERS, MIN_HEALERS } = require('constants');
 
 module.exports.loop = function () {
@@ -19,10 +20,11 @@ module.exports.loop = function () {
 
     for (const name in Game.rooms) {
         const room = Game.rooms[name];
-        room.planExpanders();
-        //room.clearPlannedExpanders();
-        //room.planRoadConstruction();
+        //room.overlayBuildableCheckerboardPositions();
+        //room.clearPlannedExtensions();
+        //room.planExtensions(3);
         //room.clearRoadConstruction();
+        //room.planRoads();
     }
     
     // Creep logic

@@ -1,5 +1,6 @@
 module.exports = {
     OVERLAY_ROAD_CONSTRUCTION: false,
+    OVERLAY_VALID_POSITIONS: false,
     DEBUGGING: true,
     MIN_HARVESTERS: 5,
     MIN_BUILDERS: 5,

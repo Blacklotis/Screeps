@@ -1,5 +1,5 @@
+//#region const
 const { DEBUGGING } = require('constants');
-
 const EXTENSIONS_PER_RCL = {
     0: 0,
     1: 0,
@@ -11,6 +11,7 @@ const EXTENSIONS_PER_RCL = {
     7: 50,
     8: 60
 }; 
+//#endregion
 
 //#region Architecting
 Room.prototype.clearRoadConstruction = function() {
@@ -24,7 +25,7 @@ Room.prototype.clearRoadConstruction = function() {
     return;
 };
 
-Room.prototype.planRoadConstruction = function(isPlanning) {
+Room.prototype.planRoads = function(isPlanning) {
     const sources = this.find(FIND_SOURCES);
     const spawn = this.find(FIND_MY_SPAWNS)[0];
     const controller = this.controller;
@@ -73,7 +74,7 @@ Room.prototype.planRoadConstruction = function(isPlanning) {
         }
 };
 
-Room.prototype.clearPlannedExpanders = function() {
+Room.prototype.clearPlannedExtensions = function() {
     const plannedExpanders = this.find(FIND_CONSTRUCTION_SITES, {
         filter: site => site.structureType === STRUCTURE_EXTENSION
     });
@@ -82,39 +83,54 @@ Room.prototype.clearPlannedExpanders = function() {
     }
 };
 
-Room.prototype.planExpanders = function() {
-    const sources = this.find(FIND_SOURCES);
+Room.prototype.planExtensions = function(radius) {
+    const spawns = this.find(FIND_MY_SPAWNS);
     const controllerLevel = this.controller ? this.controller.level : 0;
-    const maxExpanders = EXTENSIONS_PER_RCL[controllerLevel] || 0;
+    const maxExtensions = EXTENSIONS_PER_RCL[controllerLevel] || 0;
 
-    let expandersPlaced = 0;
-    for (const source of sources) {
-        const distances = [3, 4];
-        let positions = [];
+    if (spawns.length === 0) {
+        console.log('No spawns found in room:', this.name);
+        return;
+    }
 
-        for (const distance of distances) {
-            const directions = [
-                [-distance, -distance], [-distance, distance], 
-                [distance, -distance], [distance, distance]
-            ];
+    if (!controllerLevel) {
+        console.log('No controller found in room:', this.name);
+        return;
+    }
 
-            for (const dir of directions) {
-                const x = source.pos.x + dir[0];
-                const y = source.pos.y + dir[1];
-                const center = new RoomPosition(x, y, this.name);
-                
-                if (this.isValidPosition(center)) {
-                    positions = this.getExpanderPositionsFromPoint(center, maxExpanders - expandersPlaced);
-                    if (positions.length >= 3) break;
+    let extensionsPlaced = 0;
+
+    const calculatePositions = (spawn, radius) => {
+        const positions = [];
+        for (let dx = -radius; dx <= radius; dx++) {
+            for (let dy = -radius; dy <= radius; dy++) {
+                if (Math.sqrt(dx*dx + dy*dy) >= radius) {
+                    const x = spawn.pos.x + dx;
+                    const y = spawn.pos.y + dy;
+                    if (x >= 0 && x < 50 && y >= 0 && y < 50) {
+                        positions.push(new RoomPosition(x, y, this.name));
+                    }
                 }
             }
-            if (positions.length >= 3) break;
         }
+        return positions;
+    };
 
-        for (const pos of positions) {
-            if (expandersPlaced < maxExpanders && this.createConstructionSite(pos, STRUCTURE_EXTENSION) === OK) {
-                expandersPlaced++;
+    for (const spawn of spawns) {
+        let currentRadius = radius;
+        while (extensionsPlaced < maxExtensions) {
+            const positions = calculatePositions(spawn, currentRadius);
+            for (const pos of positions) {
+                if (extensionsPlaced >= maxExtensions) break;
+                var succes = false;
+                if (this.isValidBuildPosition(pos)) {
+                    this.createConstructionSite(pos, STRUCTURE_EXTENSION);                    
+                } else {
+                    this.createConstructionSite(pos, STRUCTURE_ROAD);
+                }
+                extensionsPlaced++;
             }
+            currentRadius++;
         }
     }
 };
@@ -139,6 +155,23 @@ Room.prototype.overlayRoadConstruction = function(onOff) {
                 strokeWidth: 0.1,
                 background: '#ffaa00'
             });
+        }
+    }
+};
+
+Room.prototype.overlayBuildableCheckerboardPositions = function() {
+    const validPositions = [];
+
+    for (let x = 0; x < 50; x++) {
+        for (let y = 0; y < 50; y++) {
+            const pos = new RoomPosition(x, y, this.name);
+            if (this.isValidBuildPosition(pos)) {
+                this.visual.circle(pos.x, pos.y, {
+                    fill: 'transparent',
+                    radius: 0.5,
+                    stroke: '#00FF00'
+                });
+            }
         }
     }
 };
@@ -226,52 +259,28 @@ Room.prototype.removeAllRoads = function() {
     return;
 };
 
-Room.prototype.isValidPosition = function(pos) {
+Room.prototype.isValidBuildPosition = function(pos) {
     const room = this;
-    const spawn = room.find(FIND_MY_SPAWNS)[0];
 
-    if (!spawn) {
-        return true; // No spawn, no need to validate
-    }
+    const isWithinBounds = (x, y) => x >= 0 && x < 50 && y >= 0 && y < 50;
 
-    const surroundingPositions = [
-        [-1, -1], [-1, 0], [-1, 1],
-        [0, -1], [0, 1],
-        [1, -1], [1, 0], [1, 1]
-    ];
+    const isValidPos = (pos) => {
+        const x = pos.x;
+        const y = pos.y;
 
-    const invalidPositions = surroundingPositions.reduce((count, offset) => {
-        const x = spawn.pos.x + offset[0];
-        const y = spawn.pos.y + offset[1];
+        if (!isWithinBounds(x, y)) return false;
+
         const isWall = room.getTerrain().get(x, y) === TERRAIN_MASK_WALL;
-        const isOccupied = room.lookForAt(LOOK_STRUCTURES, x, y).length > 0 || 
-                           room.lookForAt(LOOK_CONSTRUCTION_SITES, x, y).length > 0 ||
-                           room.lookForAt(LOOK_STRUCTURES, x, y, { filter: { structureType: STRUCTURE_ROAD }}).length > 0;
-        return count + (isWall || isOccupied ? 1 : 0);
-    }, 0);
+        const isOccupied = room.lookForAt(LOOK_STRUCTURES, pos).length > 0 ||
+                           room.lookForAt(LOOK_CONSTRUCTION_SITES, pos).length > 0;
+        return !isWall && !isOccupied && pos.isValid();
+    };
+
+    if (!isValidPos(pos)) return false;
 
     const isOnRoad = room.lookForAt(LOOK_STRUCTURES, pos).some(structure => structure.structureType === STRUCTURE_ROAD) ||
                      room.lookForAt(LOOK_CONSTRUCTION_SITES, pos).some(site => site.structureType === STRUCTURE_ROAD);
 
-    return invalidPositions < 8 && !isOnRoad; // Return true if not fully surrounded and not on a road
-};
-
-Room.prototype.getExpanderPositionsFromPoint = function(center, maxExpanders) {
-    const positions = [];
-    const terrain = this.getTerrain();
-    const directions = [
-        [-1, -1], [-1, 1], 
-        [1, -1], [1, 1],
-        [0, 0]
-    ];
-    
-    for (const dir of directions) {
-        const x = center.x + dir[0];
-        const y = center.y + dir[1];
-        if (terrain.get(x, y) !== TERRAIN_MASK_WALL && this.isValidPosition(new RoomPosition(x, y, this.name))) {
-            positions.push(new RoomPosition(x, y, this.name));
-        }
-    }
-    return positions.slice(0, maxExpanders); // Limit to maxExpanders
+    return !isOnRoad;
 };
 //#endregion

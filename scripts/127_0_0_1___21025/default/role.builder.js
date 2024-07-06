@@ -59,7 +59,7 @@ var roleBuilder = {
                 };
                 break;
             case creep.states.BUILD_SPAWN:
-                if(!creep.getBuilderWorkSpawn()) {
+                if(!creep.repairStructures()) {
                     this.chooseTask(creep);
                 };
                 break;
