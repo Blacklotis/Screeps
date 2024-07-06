@@ -1,4 +1,4 @@
-const { MAX_WAIT_TICKS, DEBUGGING } = require('constants');
+const { DEBUGGING } = require('constants');
 
 Creep.prototype.bodypartCosts = {
     TOUGH: 10,
@@ -38,40 +38,6 @@ Creep.prototype.calculateRequiredMoveParts = function(body) {
     return Math.ceil(fatigue / -FATIGUE_GENERATED_BY_PART.MOVE);
 };
 
-Creep.prototype.checkWaitTicks = function(sourceId) {
-    if (!this.memory.waitTicks) {
-        this.memory.waitTicks = 0;
-    }
-    if (!this.memory.lastPos) {
-        this.memory.lastPos = this.pos;
-    }
-    if (!this.memory.lastSourceId || this.memory.lastSourceId !== sourceId) {
-        this.memory.lastSourceId = sourceId;
-        this.memory.waitTicks = 0;
-    }
-
-    let lastPos;
-    if (this.memory.lastPos.x !== undefined && this.memory.lastPos.y !== undefined) {
-        lastPos = new RoomPosition(this.memory.lastPos.x, this.memory.lastPos.y, this.memory.lastPos.roomName);
-    } else {
-        lastPos = this.pos;
-    }
-
-    if (this.pos.inRangeTo(Game.getObjectById(sourceId), 3)) {
-        if (lastPos.isEqualTo(this.pos)) {
-            this.memory.waitTicks++;
-        } else {
-            this.memory.waitTicks = 0;
-        }
-    } else {
-        this.memory.waitTicks = 0;
-    }
-
-    this.memory.lastPos = this.pos;
-
-    return this.memory.waitTicks;
-};
-
 Creep.prototype.idle = function() {
     this.memory.state = this.states.IDLE;
     this.say(this.states.IDLE);
@@ -96,7 +62,6 @@ Creep.prototype.harvestEnergy = function() {
         return true;
     }
 };
-
 
 Creep.prototype.getCloserSource = function(source1, source2, ourPosition) {
     return ourPosition.getRangeTo(source1.pos) < ourPosition.getRangeTo(source2.pos) ? source1 : source2;

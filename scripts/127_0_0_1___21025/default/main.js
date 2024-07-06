@@ -5,7 +5,7 @@ var roleHealer = require('role.healer');
 var roleTower = require('role.tower');
 require('prototype.spawn');
 require('prototype.room');
-const { OVERLAY_ROAD_CONSTRUCTION, MIN_HARVESTERS, MIN_BUILDERS, MIN_FIGHTERS, MIN_HEALERS, HARVESTER_TIERS, BUILDER_TIERS } = require('constants');
+const { DEBUGGING, OVERLAY_ROAD_CONSTRUCTION, MIN_HARVESTERS, MIN_BUILDERS, MIN_FIGHTERS, MIN_HEALERS } = require('constants');
 
 module.exports.loop = function () {
 

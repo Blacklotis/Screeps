@@ -1,4 +1,4 @@
-const { MAX_WAIT_TICKS } = require('constants');
+const { DEBUGGING } = require('constants');
 
 Creep.prototype.buildRoads = function(shouldBuildTunnels) {
     const terrain = this.room.getTerrain();

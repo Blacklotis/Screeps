@@ -1,5 +1,4 @@
-const { MIN_HARVESTERS, MIN_BUILDERS, MIN_FIGHTERS, MIN_HEALERS, HARVESTER_TIERS, BUILDER_TIERS } = require('constants');
-
+const { MIN_HARVESTERS, MIN_BUILDERS, MIN_FIGHTERS, MIN_HEALERS, DEBUGGING} = require('constants');
 const HARVESTER = 'Harvester';
 const BUILDER = 'Builder';
 
