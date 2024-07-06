@@ -118,45 +118,6 @@ StructureSpawn.prototype.makeHarvester = function() {
     let carryCount = 0;
     let moveCount = 0;
 
-    // Ensure the base case of at least one WORK, one CARRY, and one MOVE part
-    if (remainingEnergy >= BODYPART_COST[WORK] + BODYPART_COST[CARRY] + BODYPART_COST[MOVE]) {
-        body.push(WORK);
-        remainingEnergy -= BODYPART_COST[WORK];
-        workCount++;
-
-        body.push(CARRY);
-        remainingEnergy -= BODYPART_COST[CARRY];
-        carryCount++;
-
-        body.push(MOVE);
-        remainingEnergy -= BODYPART_COST[MOVE];
-        moveCount++;
-    }
-
-    // Prioritize adding CARRY parts, with at least twice as many CARRY parts as WORK parts
-    while (remainingEnergy >= BODYPART_COST[CARRY] + BODYPART_COST[WORK] + 2 * BODYPART_COST[MOVE] && body.length < 50) {
-        if (carryCount < 2 * workCount) {
-            body.push(CARRY);
-            remainingEnergy -= BODYPART_COST[CARRY];
-            carryCount++;
-        } else {
-            body.push(WORK);
-            remainingEnergy -= BODYPART_COST[WORK];
-            workCount++;
-        }
-        body.push(MOVE);
-        remainingEnergy -= BODYPART_COST[MOVE];
-        moveCount++;
-    }
-
-    // Ensure the harvester has enough MOVE parts to maintain a balanced ratio
-    let movePartsNeeded = calculateRequiredMoveParts(body);
-    while (remainingEnergy >= BODYPART_COST[MOVE] && moveCount < movePartsNeeded && body.length < 50) {
-        body.push(MOVE);
-        remainingEnergy -= BODYPART_COST[MOVE];
-        moveCount++;
-    }
-
     // Sort the body parts: WORK -> CARRY -> MOVE
     body.sort((a, b) => {
         if (a === WORK && b !== WORK) return -1;
@@ -169,40 +130,12 @@ StructureSpawn.prototype.makeHarvester = function() {
     return body;
 };
 
-
 StructureSpawn.prototype.makeBuilder = function() {
     let availableEnergy = this.room.energyAvailable;
     let remainingEnergy = availableEnergy;
     let body = [];
     let workCount = 0;
     let carryCount = 0;
-
-    while (remainingEnergy >= BODYPART_COST[WORK] + BODYPART_COST[CARRY] + 2 * BODYPART_COST[MOVE] && body.length < 50) {
-        if (workCount <= carryCount) {
-            body.push(WORK);
-            remainingEnergy -= BODYPART_COST[WORK];
-            workCount++;
-        } else {
-            body.push(CARRY);
-            remainingEnergy -= BODYPART_COST[CARRY];
-            carryCount++;
-        }
-        body.push(MOVE);
-        remainingEnergy -= BODYPART_COST[MOVE];
-    }
-
-    while (remainingEnergy >= BODYPART_COST[WORK] + BODYPART_COST[MOVE] && body.length < 50) {
-        body.push(WORK);
-        remainingEnergy -= BODYPART_COST[WORK];
-        body.push(MOVE);
-        remainingEnergy -= BODYPART_COST[MOVE];
-    }
-
-    let movePartsNeeded = calculateRequiredMoveParts(body);
-    while (remainingEnergy >= BODYPART_COST[MOVE] && body.filter(part => part === MOVE).length < movePartsNeeded && body.length < 50) {
-        body.push(MOVE);
-        remainingEnergy -= BODYPART_COST[MOVE];
-    }
 
     body.sort((a, b) => {
         if (a === WORK && b !== WORK) return -1;
@@ -213,10 +146,8 @@ StructureSpawn.prototype.makeBuilder = function() {
 
     return body;
 };
+
 function calculateRequiredMoveParts(body) {
     let nonMoveParts = body.length - body.filter(part => part === MOVE).length;
-    return Math.ceil(nonMoveParts / 2); // Each MOVE part offsets 2 fatigue
+    return Math.ceil(nonMoveParts / 2);
 }
-
-
-
