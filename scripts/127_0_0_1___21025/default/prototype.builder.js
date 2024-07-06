@@ -1,22 +1,12 @@
 const { DEBUGGING } = require('constants');
 
-Creep.prototype.buildRoads = function(shouldBuildTunnels) {
-    const terrain = this.room.getTerrain();
+Creep.prototype.buildRoads = function() {
+    const roadSites = this.room.find(FIND_CONSTRUCTION_SITES, {
+        filter: (site) => site.structureType === STRUCTURE_ROAD
+    });
 
-    if (roadConstructionSites.length > 0) {
-        var target;
-
-        if (shouldBuildTunnels) {
-            target = this.room.find(FIND_CONSTRUCTION_SITES, {
-                filter: (site) => site.structureType === STRUCTURE_ROAD
-            });
-        } else {
-            const terrainType = terrain.get(site.pos.x, site.pos.y);
-            target = this.pos.findClosestByPath(roadConstructionSites, {
-                filter: (site) => terrainType !== TERRAIN_MASK_WALL
-                && terrainType !== TERRAIN_MASK_SWAMP
-            });
-        } 
+    if (roadSites.length > 0) {
+        const target = this.pos.findClosestByPath(roadSites);
 
         if (target && this.build(target) === ERR_NOT_IN_RANGE) {
             this.moveTo(target);

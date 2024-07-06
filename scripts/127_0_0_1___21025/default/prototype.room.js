@@ -180,27 +180,21 @@ Room.prototype.overlayBuildableCheckerboardPositions = function() {
 //#region Builder Tasks
 Room.prototype.getBuilderWorkExtensions = function()
 {
-    const extensionConstructionSites = this.find(FIND_CONSTRUCTION_SITES, {
+    return this.find(FIND_CONSTRUCTION_SITES, {
         filter: (site) => site.structureType === STRUCTURE_EXTENSION
-    });
-
-    if (extensionConstructionSites.length > 0) {
-        return true;
-    }
-
-    return false;
+    }).length > 0;
 }
 
 Room.prototype.getBuilderWorkRepair = function() {
     return this.find(FIND_STRUCTURES, {
         filter: (structure) => structure.hits < structure.hitsMax
-    });
+    }).length > 0;
 };
 
 Room.prototype.getBuilderWorkRoads = function() {
-    this.find(FIND_CONSTRUCTION_SITES, {
+    return this.find(FIND_CONSTRUCTION_SITES, {
         filter: (site) => site.structureType === STRUCTURE_ROAD
-    }).length;
+    }).length > 0;
 } 
 
 Room.prototype.getBuilderWorkSpawn = function() {

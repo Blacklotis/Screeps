@@ -7,7 +7,7 @@ var roleBuilder = {
         }
         
         this.takeAction(creep);
-        //creep.talk();
+        creep.talk();
     },
 
     refillEnergy: function(creep) {
@@ -25,13 +25,13 @@ var roleBuilder = {
     },
 
     chooseTask: function(creep) {
-        if (creep.room.getBuilderWorkExtensions() > 0) {
-            creep.memory.state = creep.states.BUILD_EXTENSIONS;
-        } else if (creep.room.getBuilderWorkRoads() > 0) {
-            creep.memory.state = creep.states.BUILD_ROADS;
-        } else if (creep.room.getBuilderWorkRepair().length > 0) {
+        if (creep.room.getBuilderWorkRepair() > 0) {
             creep.memory.state = creep.states.REPAIRING;
-        } else {
+        }else if (creep.room.getBuilderWorkRoads() > 0) {
+            creep.memory.state = creep.states.BUILD_ROADS;
+        }else if (creep.room.getBuilderWorkExtensions() > 0) {
+            creep.memory.state = creep.states.BUILD_EXTENSIONS;
+        }else {
             creep.memory.state = creep.states.CHARGE_CONTROLLER;  
         }
     },
