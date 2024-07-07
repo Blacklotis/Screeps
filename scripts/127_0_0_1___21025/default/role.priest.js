@@ -1,7 +1,6 @@
-var builder = require('prototype.fighter');
-var prototypeCreep = require('prototype.creep');
+var priest = require('prototype.priest');
 
-var roleBuilder = {
+var rolePriest = {
     run: function(creep) {
         this.chooseTask(creep);
         this.takeAction(creep);
@@ -23,8 +22,8 @@ var roleBuilder = {
     },
 
     chooseTask: function(creep) {
-        if (false) {
-            creep.memory.state = creep.states.ATTACK;
+        if (true) {
+            creep.memory.state = creep.states.CONVERT;
         } else{
             creep.memory.state = creep.states.IDLE;  
         }
@@ -32,10 +31,11 @@ var roleBuilder = {
     
     takeAction: function(creep) {
         switch (creep.memory.state) {
-            case creep.states.ATTACK:
+            case creep.states.CONVERT:
                 const roomName = creep.room.getLeftRoomName();
                 //creep.moveToRoom(roomName);
-                creep.clearRoom();
+                creep.claimRoom();
+                //creep.convertRoom(logItemDetails);
                 //this.chooseTask(creep);
                 break;
             case creep.states.IDLE:
@@ -46,4 +46,7 @@ var roleBuilder = {
     
 };
 
-module.exports = roleBuilder;
+function logItemDetails(item) {
+    console.log(`Type: ${item.structureType || item.resourceType || 'creep'}, ID: ${item.id}`);
+}
+module.exports = rolePriest;

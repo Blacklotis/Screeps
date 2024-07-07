@@ -7,7 +7,7 @@ var roleBuilder = {
         }
         
         this.takeAction(creep);
-        creep.talk();
+        //creep.talk();
     },
 
     refillEnergy: function(creep) {

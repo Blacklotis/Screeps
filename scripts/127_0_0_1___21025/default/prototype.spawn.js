@@ -1,6 +1,9 @@
-const { MIN_HARVESTERS, MIN_BUILDERS, MIN_FIGHTERS, MIN_HEALERS, DEBUGGING} = require('constants');
+const { MIN_HARVESTERS, MIN_BUILDERS, MIN_FIGHTERS, MIN_HEALERS, MIN_PRIEST,DEBUGGING} = require('constants');
+const { initial } = require('lodash');
 const HARVESTER = 'Harvester';
 const BUILDER = 'Builder';
+const FIGHTER = 'Fighter';
+const PRIEST = 'Priest';
 
 StructureSpawn.prototype.manageSpawning = function() {
     if (this.spawning) {
@@ -18,9 +21,10 @@ StructureSpawn.prototype.manageSpawning = function() {
 
         if (this.spawning == null) {
             var harvesters = _.filter(Game.creeps, (creep) => creep.memory.role == HARVESTER.toLowerCase());
-            var healers = _.filter(Game.creeps, (creep) => creep.memory.role == 'healer');
+            var healers = _.filter(Game.creeps, (creep) => creep.memory.role == PRIEST.toLowerCase());
             var builders = _.filter(Game.creeps, (creep) => creep.memory.role == BUILDER.toLowerCase());
-            var fighters = _.filter(Game.creeps, (creep) => creep.memory.role == 'fighter');
+            var fighters = _.filter(Game.creeps, (creep) => creep.memory.role == FIGHTER.toLowerCase());
+            var priests = _.filter(Game.creeps, (creep) => creep.memory.role == PRIEST.toLowerCase());
             
             if (harvesters.length < MIN_HARVESTERS) {
                 var newCreepName = HARVESTER;
@@ -28,24 +32,20 @@ StructureSpawn.prototype.manageSpawning = function() {
             } else if (builders.length <= MIN_BUILDERS) {
                 var newCreepName = BUILDER;
                 var newCreepBody = [WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE];
+            } else if (fighters.length < MIN_FIGHTERS) {
+                var newCreepName = FIGHTER;
+                var newCreepBody = [TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, 
+                    ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, 
+                    MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE];
+            } else if (priests.length < MIN_PRIEST) {
+                var newCreepName = PRIEST;
+                var newCreepBody = [CLAIM, CLAIM, MOVE, MOVE];
             }
             
             if (newCreepName && newCreepBody) {
                 console.log(`Spawning new ${newCreepName}: ${JSON.stringify(newCreepBody)}`);
-                this.spawnCustomCreep(newCreepBody, newCreepName, newCreepName.toLowerCase());
+                this.spawnCustomCreep(newCreepBody, newCreepName, newCreepName.toLowerCase(), true);
             }
-            
-            /* else if (fighters.length < MIN_FIGHTERS) {
-                this.spawnCustomCreep(
-                    [ATTACK, MOVE], 
-                    'Fighter', 
-                    { role: 'fighter', waitTicks: 0, lastSourceId: null });
-            } else if (healers.length < MIN_HEALERS) {
-                this.spawnCustomCreep(
-                    [WORK, HEAL, MOVE], 
-                    'Healer', 
-                    'harvester');
-            }  */
         }
     }
 };
@@ -65,9 +65,15 @@ StructureSpawn.prototype.getExtensions = function() {
     });
 };
 
-StructureSpawn.prototype.spawnCustomCreep = function(bodyParts, baseName, role) {
+StructureSpawn.prototype.spawnCustomCreep = function(bodyParts, baseName, role, shouldRally) {
     var newCreepName = this.generateUniqueName(baseName);
-    var result = this.spawnCreep(bodyParts, newCreepName, {memory: {role: role, waitTicks: 0, lastSourceId: null}});
+
+    if (shouldRally) {
+        const rallyPoint = this.room.findRallyPoint();
+        var result = this.spawnCreep(bodyParts, newCreepName, {memory: {role: role, initial: rallyPoint}});
+    } else {
+        var result = this.spawnCreep(bodyParts, newCreepName, {memory: {role: role}});
+    }
 
     switch(result) {
         case OK:

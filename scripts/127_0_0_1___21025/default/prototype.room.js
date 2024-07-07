@@ -122,7 +122,6 @@ Room.prototype.planExtensions = function(radius) {
             const positions = calculatePositions(spawn, currentRadius);
             for (const pos of positions) {
                 if (extensionsPlaced >= maxExtensions) break;
-                var succes = false;
                 if (this.isValidBuildPosition(pos)) {
                     this.createConstructionSite(pos, STRUCTURE_EXTENSION);                    
                 } else {
@@ -241,6 +240,12 @@ Room.prototype.getHarvesterWorkSpawn = function() {
 };
 //#endregion
 
+//#region Figher Tasks
+Room.prototype.getFighterWorkSpawn = function() {
+    return this.find(FIND_HOSTILE_SPAWNS).length > 0;
+};
+//#endregion
+
 //#region Utility
 Room.prototype.removeAllRoads = function() {
     const roads = this.find(FIND_STRUCTURES, {
@@ -277,4 +282,132 @@ Room.prototype.isValidBuildPosition = function(pos) {
 
     return !isOnRoad;
 };
+
+Room.prototype.createPathToExit = function(roomEdge) {
+
+    if (roomEdge !== FIND_EXIT_TOP 
+        && roomEdge!== FIND_EXIT_RIGHT
+        && roomEdge!== FIND_EXIT_BOTTOM
+        && roomEdge!== FIND_EXIT_LEFT ) {
+            return false;
+        }
+
+    const spawns = this.find(FIND_MY_SPAWNS);
+    const controller = this.controller;
+
+    if (spawns.length === 0) {
+        console.log('No spawns found in room:', this.name);
+        return null;
+    }
+
+    if (!controller) {
+        console.log('No controller found in room:', this.name);
+        return null;
+    }
+    
+    //console.log(`Midpoint: (${midX}, ${midY})`);
+    // Get midpoint of spawn and room controller
+    const ourRoadMidpoint = this.midpoint(spawns[0].pos, controller.pos);
+    const ourExit = ourRoadMidpoint.findClosestByPath(this.find(roomEdge));
+ 
+     if (!ourExit) {
+         console.log('No exit found in room:', this.name);
+         return false;
+     }
+
+    // Use PathFinder to find the path from the midpoint to the closest exit
+    const path = PathFinder.search(ourRoadMidpoint, { pos: ourExit, range: 1 }, {
+        swampCost: 1,
+        plainCost: 2,
+        roomCallback: function(roomName) {
+            const room = Game.rooms[roomName];
+            if (!room) return;
+            let costs = new PathFinder.CostMatrix;
+            room.find(FIND_STRUCTURES).forEach(function(struct) {
+                if (struct.structureType === STRUCTURE_ROAD) {
+                    // Favor roads over plain tiles
+                    costs.set(struct.pos.x, struct.pos.y, 1);
+                } else if (struct.structureType !== STRUCTURE_CONTAINER &&
+                           (struct.structureType !== STRUCTURE_RAMPART ||
+                            !struct.my)) {
+                    // Can't walk through non-walkable buildings
+                    costs.set(struct.pos.x, struct.pos.y, 0xff);
+                }
+            });
+            return costs;
+        }
+    }).path;
+
+    // Visualize the path
+    for (const pos of path) {
+        this.visual.circle(pos.x, pos.y, {
+            fill: 'transparent',
+            radius: 0.5,
+            stroke: '#00ff00'
+        });
+        this.visual.line(pos.x, pos.y, pos.x + 0.5, pos.y + 0.5, {
+            color: '#00ff00',
+            lineStyle: 'dashed'
+        });
+    }
+}
+
+Room.prototype.midpoint = function(posOne, posTwo) {
+    const midX = Math.floor((posOne.x + posTwo.x) / 2);
+    const midY = Math.floor((posOne.y + posTwo.y) / 2);
+    //console.log(`Midpoint: (${midX}, ${midY})`);
+    return new RoomPosition(midX, midY, this.name);
+}
+//#endregion
+
+//#region Navigation
+Room.prototype.getLeftRoomName = function() {
+    const [x, y] = this.name.match(/([WE]\d+)([NS]\d+)/).slice(1);
+    const xNum = parseInt(x.slice(1));
+    const newX = x[0] === 'W' ? xNum + 1 : xNum - 1;
+    const newXStr = x[0] === 'W' ? `W${newX}` : `E${newX}`;
+    return `${newXStr}${y}`;
+};
+
+Room.prototype.findRallyPoint = function() {
+    const spawns = this.find(FIND_MY_SPAWNS);
+
+    if (spawns.length === 0) {
+        console.log('No spawns found in room:', this.name);
+        return null;
+    }
+
+    const spawn = spawns[0];
+    const spawnPos = spawn.pos;
+    const possibleRallyPoints = [];
+
+    // Generate positions 4-5 spaces away from the spawn
+    for (let dx = -5; dx <= 5; dx++) {
+        for (let dy = -5; dy <= 5; dy++) {
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance >= 4 && distance <= 5) {
+                const x = spawnPos.x + dx;
+                const y = spawnPos.y + dy;
+                if (x >= 0 && x < 50 && y >= 0 && y < 50) {
+                    possibleRallyPoints.push(new RoomPosition(x, y, this.name));
+                }
+            }
+        }
+    }
+
+    for (const pos of possibleRallyPoints) {
+        const terrain = this.getTerrain().get(pos.x, pos.y);
+        const isClear = this.lookForAt(LOOK_STRUCTURES, pos).length === 0 &&
+                        this.lookForAt(LOOK_CONSTRUCTION_SITES, pos).length === 0 &&
+                        terrain !== TERRAIN_MASK_WALL;
+
+        if (isClear) {
+            return pos;
+        }
+    }
+
+    console.log('No valid rally points found in room:', this.name);
+    return null;
+};
+
 //#endregion

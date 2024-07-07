@@ -19,10 +19,12 @@ Creep.prototype.states = {
     CHARGE_CONTROLLER: '⚡',
     CHARGE_EXTENSIONS: '🔋',
     CHARGE_SPAWN: '🏠',
+    CONVERT: '✝️',
     HARVEST_ENERGY: '🌽',
     HEALING: '❤️‍🩹',
     IDLE: '❌',
     REPAIRING: '🔧',
+    STAGING: '🏃',
     UPGRADING: '⚡',
 };
 
@@ -39,8 +41,13 @@ Creep.prototype.calculateRequiredMoveParts = function(body) {
 };
 
 Creep.prototype.idle = function() {
-    this.memory.state = this.states.IDLE;
-    this.say(this.states.IDLE);
+    const rallyPoint = this.room.findRallyPoint();
+    if (rallyPoint) {
+        this.moveTo(rallyPoint);
+        return true;
+    }
+
+    return false;
 }
 
 Creep.prototype.talk = function() {
@@ -57,8 +64,6 @@ Creep.prototype.harvestEnergy = function() {
         if (this.harvest(source) == ERR_NOT_IN_RANGE) {
             this.moveTo(source);
         }
-        this.memory.lastSourceId = source.id;
-        this.memory.waitTicks = 0;
         return true;
     }
 };
@@ -77,4 +82,12 @@ Creep.prototype.chargeController = function() {
         return true;
     }
     return false;
+};
+
+Creep.prototype.moveToRoom = function(targetRoom) {
+    if (this.room.name !== targetRoom) {
+        const exitDir = this.room.findExitTo(targetRoom);
+        const exit = this.pos.findClosestByRange(exitDir);
+        this.moveTo(exit, { visualizePathStyle: { stroke: '#ff0000' } });
+    }
 };
