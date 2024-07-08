@@ -1,5 +1,3 @@
-// metrics.js
-
 Room.prototype.calculateCreepNeeds = function() {
     const metrics = this.collectMetrics();
     const needs = {
@@ -8,7 +6,7 @@ Room.prototype.calculateCreepNeeds = function() {
     };
 
     if (metrics.constructionSites) {
-        needs.builders = Math.ceil(Object.values(metrics.constructionSites).reduce((a, b) => a + b, 0) / 5); // 1 builder per 5 construction sites
+        needs.builders = Math.ceil(Object.values(metrics.constructionSites).reduce((a, b) => a + b, 0) / 5);
     }
 
     if (metrics.structures['container']) {
