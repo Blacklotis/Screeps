@@ -282,7 +282,6 @@ Room.prototype.isValidBuildPosition = function(pos) {
     return !isOnRoad;
 };
 
-
 Room.prototype.findRallyPoint = function() {
     const spawns = this.find(FIND_MY_SPAWNS);
 

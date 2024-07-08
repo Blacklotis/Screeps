@@ -1,12 +1,5 @@
 const { DEBUGGING } = require('constants');
 
-const bodyConfiguration = {
-    1: [WORK, WORK, CARRY, MOVE],
-    2: [WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE],
-    3: [WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE],
-    4: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE]
-};
-
 Creep.prototype.chargeSpawn = function() {
     var spawn = this.room.find(FIND_MY_SPAWNS)[0];
     if (this.transfer(spawn, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {

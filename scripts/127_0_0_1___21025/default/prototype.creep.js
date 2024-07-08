@@ -18,10 +18,6 @@ Creep.prototype.states = {
     UPGRADING: '⚡',
 };
 
-Creep.prototype.create = function() {
-    
-}
-
 Creep.prototype.idle = function() {
     const rallyPoint = this.room.findRallyPoint();
     if (rallyPoint) {
