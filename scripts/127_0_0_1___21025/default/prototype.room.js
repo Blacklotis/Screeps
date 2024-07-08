@@ -133,155 +133,6 @@ Room.prototype.planExtensions = function(radius) {
         }
     }
 };
-//#endregion
-
-//#region Overlay
-Room.prototype.overlayRoadConstruction = function(onOff) {
-    const constructionSites = this.find(FIND_CONSTRUCTION_SITES, {
-        filter: { structureType: STRUCTURE_ROAD }
-    });
-
-    if (onOff) {
-        for (const site of constructionSites) {
-            this.visual.circle(site.pos, {
-                fill: 'transparent',
-                radius: 0.35,
-                stroke: '#ffaa00'
-            });
-            this.visual.text('🚧', site.pos.x, site.pos.y + 0.25, {
-                font: 0.5,
-                stroke: '#000000',
-                strokeWidth: 0.1,
-                background: '#ffaa00'
-            });
-        }
-    }
-};
-
-Room.prototype.overlayBuildableCheckerboardPositions = function() {
-    const validPositions = [];
-
-    for (let x = 0; x < 50; x++) {
-        for (let y = 0; y < 50; y++) {
-            const pos = new RoomPosition(x, y, this.name);
-            if (this.isValidBuildPosition(pos)) {
-                this.visual.circle(pos.x, pos.y, {
-                    fill: 'transparent',
-                    radius: 0.5,
-                    stroke: '#00FF00'
-                });
-            }
-        }
-    }
-};
-//#endregion
-
-//#region Builder Tasks
-Room.prototype.getBuilderWorkExtensions = function()
-{
-    return this.find(FIND_CONSTRUCTION_SITES, {
-        filter: (site) => site.structureType === STRUCTURE_EXTENSION
-    }).length > 0;
-}
-
-Room.prototype.getBuilderWorkRepair = function() {
-    return this.find(FIND_STRUCTURES, {
-        filter: (structure) => structure.hits < structure.hitsMax
-    }).length > 0;
-};
-
-Room.prototype.getBuilderWorkRoads = function() {
-    return this.find(FIND_CONSTRUCTION_SITES, {
-        filter: (site) => site.structureType === STRUCTURE_ROAD
-    }).length > 0;
-} 
-
-Room.prototype.getBuilderWorkSpawn = function() {
-    const spawnConstructionSites = this.find(FIND_CONSTRUCTION_SITES, {
-        filter: (site) => site.structureType === STRUCTURE_SPAWN
-    });
-
-    if (spawnConstructionSites.length > 0) {
-        return true;
-    }
-
-    return false;
-};
-//#endregion
-
-//#region Worker Tasks
-Room.prototype.getHarvesterWorkExtensions = function() {
-    const extensions = this.find(FIND_MY_STRUCTURES, {
-        filter: (structure) => 
-            structure.structureType === STRUCTURE_EXTENSION 
-            && structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0
-    });
-
-    if (extensions.length > 0) {
-        return true;
-    }
-
-    return false;
-};
-
-Room.prototype.getHarvesterWorkSpawn = function() {
-    const spawnConstructionSites = this.find(FIND_CONSTRUCTION_SITES, {
-        filter: (site) => site.structureType === STRUCTURE_SPAWN
-    });
-
-    const spawns = this.find(FIND_MY_SPAWNS);
-    for (const spawn of spawns) {
-        if (spawn.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
-            return true;
-        }
-    }
-
-    return false;
-};
-//#endregion
-
-//#region Figher Tasks
-Room.prototype.getFighterWorkSpawn = function() {
-    return this.find(FIND_HOSTILE_SPAWNS).length > 0;
-};
-//#endregion
-
-//#region Utility
-Room.prototype.removeAllRoads = function() {
-    const roads = this.find(FIND_STRUCTURES, {
-        filter: (structure) => structure.structureType === STRUCTURE_ROAD
-    });
-    for (const road of roads) {
-        road.destroy();
-    }
-    console.log(`Removed ${roads.length} roads.`);
-    return;
-};
-
-Room.prototype.isValidBuildPosition = function(pos) {
-    const room = this;
-
-    const isWithinBounds = (x, y) => x >= 0 && x < 50 && y >= 0 && y < 50;
-
-    const isValidPos = (pos) => {
-        const x = pos.x;
-        const y = pos.y;
-
-        if (!isWithinBounds(x, y)) return false;
-
-        const isWall = room.getTerrain().get(x, y) === TERRAIN_MASK_WALL;
-        const isOccupied = room.lookForAt(LOOK_STRUCTURES, pos).length > 0 ||
-                           room.lookForAt(LOOK_CONSTRUCTION_SITES, pos).length > 0;
-        return !isWall && !isOccupied && pos.isValid();
-    };
-
-    if (!isValidPos(pos)) return false;
-
-    const isOnRoad = room.lookForAt(LOOK_STRUCTURES, pos).some(structure => structure.structureType === STRUCTURE_ROAD) ||
-                     room.lookForAt(LOOK_CONSTRUCTION_SITES, pos).some(site => site.structureType === STRUCTURE_ROAD);
-
-    return !isOnRoad;
-};
 
 Room.prototype.createPathToExit = function(roomEdge) {
 
@@ -351,23 +202,86 @@ Room.prototype.createPathToExit = function(roomEdge) {
         });
     }
 }
-
-Room.prototype.midpoint = function(posOne, posTwo) {
-    const midX = Math.floor((posOne.x + posTwo.x) / 2);
-    const midY = Math.floor((posOne.y + posTwo.y) / 2);
-    //console.log(`Midpoint: (${midX}, ${midY})`);
-    return new RoomPosition(midX, midY, this.name);
-}
 //#endregion
 
-//#region Navigation
-Room.prototype.getLeftRoomName = function() {
-    const [x, y] = this.name.match(/([WE]\d+)([NS]\d+)/).slice(1);
-    const xNum = parseInt(x.slice(1));
-    const newX = x[0] === 'W' ? xNum + 1 : xNum - 1;
-    const newXStr = x[0] === 'W' ? `W${newX}` : `E${newX}`;
-    return `${newXStr}${y}`;
+//#region Overlay
+Room.prototype.overlayRoadConstruction = function(onOff) {
+    const constructionSites = this.find(FIND_CONSTRUCTION_SITES, {
+        filter: { structureType: STRUCTURE_ROAD }
+    });
+
+    if (onOff) {
+        for (const site of constructionSites) {
+            this.visual.circle(site.pos, {
+                fill: 'transparent',
+                radius: 0.35,
+                stroke: '#ffaa00'
+            });
+            this.visual.text('🚧', site.pos.x, site.pos.y + 0.25, {
+                font: 0.5,
+                stroke: '#000000',
+                strokeWidth: 0.1,
+                background: '#ffaa00'
+            });
+        }
+    }
 };
+
+Room.prototype.overlayBuildableCheckerboardPositions = function() {
+    const validPositions = [];
+
+    for (let x = 0; x < 50; x++) {
+        for (let y = 0; y < 50; y++) {
+            const pos = new RoomPosition(x, y, this.name);
+            if (this.isValidBuildPosition(pos)) {
+                this.visual.circle(pos.x, pos.y, {
+                    fill: 'transparent',
+                    radius: 0.5,
+                    stroke: '#00FF00'
+                });
+            }
+        }
+    }
+};
+//#endregion
+
+//#region Utility
+Room.prototype.removeAllRoads = function() {
+    const roads = this.find(FIND_STRUCTURES, {
+        filter: (structure) => structure.structureType === STRUCTURE_ROAD
+    });
+    for (const road of roads) {
+        road.destroy();
+    }
+    console.log(`Removed ${roads.length} roads.`);
+    return;
+};
+
+Room.prototype.isValidBuildPosition = function(pos) {
+    const room = this;
+
+    const isWithinBounds = (x, y) => x >= 0 && x < 50 && y >= 0 && y < 50;
+
+    const isValidPos = (pos) => {
+        const x = pos.x;
+        const y = pos.y;
+
+        if (!isWithinBounds(x, y)) return false;
+
+        const isWall = room.getTerrain().get(x, y) === TERRAIN_MASK_WALL;
+        const isOccupied = room.lookForAt(LOOK_STRUCTURES, pos).length > 0 ||
+                           room.lookForAt(LOOK_CONSTRUCTION_SITES, pos).length > 0;
+        return !isWall && !isOccupied && pos.isValid();
+    };
+
+    if (!isValidPos(pos)) return false;
+
+    const isOnRoad = room.lookForAt(LOOK_STRUCTURES, pos).some(structure => structure.structureType === STRUCTURE_ROAD) ||
+                     room.lookForAt(LOOK_CONSTRUCTION_SITES, pos).some(site => site.structureType === STRUCTURE_ROAD);
+
+    return !isOnRoad;
+};
+
 
 Room.prototype.findRallyPoint = function() {
     const spawns = this.find(FIND_MY_SPAWNS);
@@ -410,4 +324,10 @@ Room.prototype.findRallyPoint = function() {
     return null;
 };
 
+Room.prototype.midpoint = function(posOne, posTwo) {
+    const midX = Math.floor((posOne.x + posTwo.x) / 2);
+    const midY = Math.floor((posOne.y + posTwo.y) / 2);
+    //console.log(`Midpoint: (${midX}, ${midY})`);
+    return new RoomPosition(midX, midY, this.name);
+}
 //#endregion

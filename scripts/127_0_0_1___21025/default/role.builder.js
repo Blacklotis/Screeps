@@ -2,10 +2,12 @@ var builder = require('prototype.builder');
 
 var roleBuilder = {
     run: function(creep) {
-        if (this.refillEnergy(creep)) {
-            this.chooseTask(creep);
+        if (creep.moveToRoom()) {
+            if (this.refillEnergy(creep)) {
+                this.chooseTask(creep);
+            }
         }
-        
+
         this.takeAction(creep);
         //creep.talk();
     },

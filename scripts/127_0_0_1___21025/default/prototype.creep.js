@@ -1,15 +1,5 @@
 const { DEBUGGING } = require('constants');
-
-Creep.prototype.bodypartCosts = {
-    TOUGH: 10,
-    MOVE: 50,
-    CARRY: 50,
-    HEAL: 50,
-    ATTACK: 80,
-    WORK: 100,
-    RANGED_ATTACK: 150,
-    CLAIM: 600,
-};
+require('navigation');
 
 Creep.prototype.states = {
     ATTACK: '⚔️',
@@ -28,17 +18,9 @@ Creep.prototype.states = {
     UPGRADING: '⚡',
 };
 
-Creep.prototype.calculateRequiredMoveParts = function(body) {
-    let fatigue = 0;
-
-    body.forEach(part => {
-        if (part !== MOVE) {
-            fatigue += FATIGUE_GENERATED_BY_PART[part];
-        }
-    });
-
-    return Math.ceil(fatigue / -FATIGUE_GENERATED_BY_PART.MOVE);
-};
+Creep.prototype.create = function() {
+    
+}
 
 Creep.prototype.idle = function() {
     const rallyPoint = this.room.findRallyPoint();
@@ -88,6 +70,8 @@ Creep.prototype.moveToRoom = function(targetRoom) {
     if (this.room.name !== targetRoom) {
         const exitDir = this.room.findExitTo(targetRoom);
         const exit = this.pos.findClosestByRange(exitDir);
-        this.moveTo(exit, { visualizePathStyle: { stroke: '#ff0000' } });
+        this.moveTo(exit, { visualizePathStyle: { stroke: '#ffffff' } });
+        return true;
     }
+    return false;
 };

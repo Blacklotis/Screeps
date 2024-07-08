@@ -28,3 +28,7 @@ Creep.prototype.clearRoom = function() {
         }
     }
 };
+
+Room.prototype.getFighterWorkSpawn = function() {
+    return this.find(FIND_HOSTILE_SPAWNS).length > 0;
+};

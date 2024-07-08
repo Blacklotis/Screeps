@@ -1,14 +1,26 @@
-const { MIN_HARVESTERS, MIN_BUILDERS, MIN_FIGHTERS, MIN_HEALERS, MIN_PRIEST,DEBUGGING} = require('constants');
+const { 
+    BODY_CONFIGURATION, 
+    DEBUGGING, 
+    MIN_HARVESTERS, 
+    MIN_BUILDERS, 
+    MIN_FIGHTERS, 
+    MIN_HEALERS,
+    MIN_PRIEST,
+    HARVESTER,
+    PRIEST,
+    BUILDER,
+    FIGHTER,
+    HEALER
+} = require('constants');
 const { initial } = require('lodash');
-const HARVESTER = 'Harvester';
-const BUILDER = 'Builder';
-const FIGHTER = 'Fighter';
-const PRIEST = 'Priest';
+require('prototype.harvester');
+
+StructureSpawn.prototype.getRoomLevel = function() {
+    return this.room.controller.level;
+};
 
 StructureSpawn.prototype.manageSpawning = function() {
     if (this.spawning) {
-
-        // This is a good time to check for things that have died.
         this.clearDeadCreepMemory();
         var spawningCreep = Game.creeps[this.spawning.name];
         this.room.visual.text(
@@ -18,34 +30,31 @@ StructureSpawn.prototype.manageSpawning = function() {
             { align: 'bottom', opacity: 0.8 }
         );
     } else {
+        var harvesters = _.filter(Game.creeps, (creep) => creep.memory.role == HARVESTER.toLowerCase());
+        var healers = _.filter(Game.creeps, (creep) => creep.memory.role == HEALER.toLowerCase());
+        var builders = _.filter(Game.creeps, (creep) => creep.memory.role == BUILDER.toLowerCase());
+        var fighters = _.filter(Game.creeps, (creep) => creep.memory.role == FIGHTER.toLowerCase());
+        var priests = _.filter(Game.creeps, (creep) => creep.memory.role == PRIEST.toLowerCase());
 
-        if (this.spawning == null) {
-            var harvesters = _.filter(Game.creeps, (creep) => creep.memory.role == HARVESTER.toLowerCase());
-            var healers = _.filter(Game.creeps, (creep) => creep.memory.role == PRIEST.toLowerCase());
-            var builders = _.filter(Game.creeps, (creep) => creep.memory.role == BUILDER.toLowerCase());
-            var fighters = _.filter(Game.creeps, (creep) => creep.memory.role == FIGHTER.toLowerCase());
-            var priests = _.filter(Game.creeps, (creep) => creep.memory.role == PRIEST.toLowerCase());
-            
-            if (harvesters.length < MIN_HARVESTERS) {
-                var newCreepName = HARVESTER;
-                var newCreepBody = [WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE];
-            } else if (builders.length <= MIN_BUILDERS) {
-                var newCreepName = BUILDER;
-                var newCreepBody = [WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE];
-            } else if (fighters.length < MIN_FIGHTERS) {
-                var newCreepName = FIGHTER;
-                var newCreepBody = [TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, 
-                    ATTACK, ATTACK, ATTACK, ATTACK, ATTACK, 
-                    MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE];
-            } else if (priests.length < MIN_PRIEST) {
-                var newCreepName = PRIEST;
-                var newCreepBody = [CLAIM, CLAIM, MOVE, MOVE];
-            }
-            
-            if (newCreepName && newCreepBody) {
-                console.log(`Spawning new ${newCreepName}: ${JSON.stringify(newCreepBody)}`);
-                this.spawnCustomCreep(newCreepBody, newCreepName, newCreepName.toLowerCase(), true);
-            }
+        var roomLevel = this.getRoomLevel();
+        
+        if (harvesters.length < MIN_HARVESTERS) {
+            var newCreepName = HARVESTER;
+            var newCreepBody = BODY_CONFIGURATION.HARVESTER[roomLevel - 1];
+        } else if (builders.length <= MIN_BUILDERS) {
+            var newCreepName = BUILDER;
+            var newCreepBody = BODY_CONFIGURATION.BUILDER[roomLevel - 1];
+        } else if (fighters.length < MIN_FIGHTERS) {
+            var newCreepName = FIGHTER;
+            var newCreepBody = BODY_CONFIGURATION.FIGHTER[roomLevel - 1];
+        } else if (priests.length < MIN_PRIEST) {
+            var newCreepName = PRIEST;
+            var newCreepBody = BODY_CONFIGURATION.PRIEST[roomLevel - 1];
+        }
+
+        if (newCreepName && newCreepBody) {
+            console.log(`Spawning new${newCreepName}: level ${roomLevel}`);
+            this.spawnCustomCreep(newCreepBody, newCreepName, newCreepName.toLowerCase(), true);
         }
     }
 };
@@ -65,14 +74,15 @@ StructureSpawn.prototype.getExtensions = function() {
     });
 };
 
-StructureSpawn.prototype.spawnCustomCreep = function(bodyParts, baseName, role, shouldRally) {
+StructureSpawn.prototype.spawnCustomCreep = function(bodyParts, baseName, role, shouldRally, targetRoom) {
     var newCreepName = this.generateUniqueName(baseName);
-
+    if (!targetRoom){
+        targetRoom = this.room;
+    }
     if (shouldRally) {
-        const rallyPoint = this.room.findRallyPoint();
-        var result = this.spawnCreep(bodyParts, newCreepName, {memory: {role: role, initial: rallyPoint}});
+        var result = this.spawnCreep(bodyParts, newCreepName, {memory: {role: role, initial: this.room.findRallyPoint(), targetRoom: targetRoom}});
     } else {
-        var result = this.spawnCreep(bodyParts, newCreepName, {memory: {role: role}});
+        var result = this.spawnCreep(bodyParts, newCreepName, {memory: {role: role, targetRoom: targetRoom}});
     }
 
     switch(result) {
@@ -115,45 +125,3 @@ StructureSpawn.prototype.spawnCustomCreep = function(bodyParts, baseName, role, 
 StructureSpawn.prototype.generateUniqueName = function(baseName) {
     return baseName + '_' + Game.time.toString();
 };
-
-StructureSpawn.prototype.makeHarvester = function() {
-    let availableEnergy = this.room.energyAvailable;
-    let remainingEnergy = availableEnergy;
-    let body = [];
-    let workCount = 0;
-    let carryCount = 0;
-    let moveCount = 0;
-
-    // Sort the body parts: WORK -> CARRY -> MOVE
-    body.sort((a, b) => {
-        if (a === WORK && b !== WORK) return -1;
-        if (a === CARRY && b === MOVE) return -1;
-        if (a === MOVE && b !== MOVE) return 1;
-        if (a === b) return 0;
-        return 0;
-    });
-
-    return body;
-};
-
-StructureSpawn.prototype.makeBuilder = function() {
-    let availableEnergy = this.room.energyAvailable;
-    let remainingEnergy = availableEnergy;
-    let body = [];
-    let workCount = 0;
-    let carryCount = 0;
-
-    body.sort((a, b) => {
-        if (a === WORK && b !== WORK) return -1;
-        if (a === CARRY && b === MOVE) return -1;
-        if (a === MOVE && b !== MOVE) return 1;
-        return 0;
-    });
-
-    return body;
-};
-
-function calculateRequiredMoveParts(body) {
-    let nonMoveParts = body.length - body.filter(part => part === MOVE).length;
-    return Math.ceil(nonMoveParts / 2);
-}

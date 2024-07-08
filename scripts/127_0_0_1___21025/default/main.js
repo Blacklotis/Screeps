@@ -7,24 +7,48 @@ var rolePriest = require('role.priest');
 require('prototype.spawn');
 require('prototype.room');
 require('prototype.roomPosition');
-const { DEBUGGING, OVERLAY_ROAD_CONSTRUCTION, MIN_HARVESTERS, MIN_BUILDERS, MIN_FIGHTERS, MIN_HEALERS } = require('constants');
+const metrics = require('metrics');
+const { BODY_CONFIGURATION, DEBUGGING, OVERLAY_ROAD_CONSTRUCTION, MIN_HARVESTERS, MIN_BUILDERS, MIN_FIGHTERS, MIN_HEALERS } = require('constants');
 
-Creep.prototype.moveToRoomAndAttack = function(targetRoom) {
-    if (this.room.name !== targetRoom) {
-        // Move to the target room if not already there
-        const exitDir = this.room.findExitTo(targetRoom);
-        const exit = this.pos.findClosestByRange(exitDir);
-        this.moveTo(exit, { visualizePathStyle: { stroke: '#ff0000' } });
-    } else {
-        // Attack hostiles in the target room
-        const target = this.pos.findClosestByPath(FIND_HOSTILE_CREEPS) || this.pos.findClosestByPath(FIND_HOSTILE_STRUCTURES);
-        if (target) {
-            if (this.attack(target) === ERR_NOT_IN_RANGE) {
-                this.moveTo(target, { visualizePathStyle: { stroke: '#ff0000' } });
+function assignCreepsToRooms() {
+    const allRoomsNeeds = {};
+
+    // Collect needs for all rooms
+    for (const roomName in Game.rooms) {
+        const room = Game.rooms[roomName];
+        allRoomsNeeds[roomName] = room.calculateCreepNeeds();
+    }
+
+    const creeps = _.filter(Game.creeps, (creep) => creep.memory.role === 'builder' || creep.memory.role === 'harvester');
+
+    for (const creep of creeps) {
+        let highestNeedRoom = null;
+        let highestNeed = 0;
+
+        for (const roomName in allRoomsNeeds) {
+            const roomNeeds = allRoomsNeeds[roomName];
+
+            if (creep.memory.role === 'builder' && roomNeeds.builders > highestNeed) {
+                highestNeed = roomNeeds.builders;
+                highestNeedRoom = roomName;
+            } else if (creep.memory.role === 'harvester' && roomNeeds.harvesters > highestNeed) {
+                highestNeed = roomNeeds.harvesters;
+                highestNeedRoom = roomName;
+            }
+        }
+
+        if (highestNeedRoom) {
+            creep.memory.targetRoom = highestNeedRoom;
+
+            // Decrement the need in the assigned room
+            if (creep.memory.role === 'builder') {
+                allRoomsNeeds[highestNeedRoom].builders--;
+            } else if (creep.memory.role === 'harvester') {
+                allRoomsNeeds[highestNeedRoom].harvesters--;
             }
         }
     }
-};
+}
 
 
 module.exports.loop = function () {
@@ -39,10 +63,11 @@ module.exports.loop = function () {
 
     for (const name in Game.rooms) {
         const room = Game.rooms[name];
-        room.createPathToExit(FIND_EXIT_LEFT);
+        //room.logMetrics();
+        //room.createPathToExit(FIND_EXIT_LEFT);
         //room.overlayBuildableCheckerboardPositions();
         //room.clearPlannedExtensions();
-        //room.planExtensions(3);
+        //room.planExtensions(5);
         //room.clearRoadConstruction();
         //room.planRoads();
         //room.createConstructionSite(12, 45, STRUCTURE_ROAD);

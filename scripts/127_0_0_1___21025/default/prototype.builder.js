@@ -44,3 +44,34 @@ Creep.prototype.buildExtensions = function() {
 
     return false;
 };
+
+Room.prototype.getBuilderWorkExtensions = function()
+{
+    return this.find(FIND_CONSTRUCTION_SITES, {
+        filter: (site) => site.structureType === STRUCTURE_EXTENSION
+    }).length > 0;
+}
+
+Room.prototype.getBuilderWorkRepair = function() {
+    return this.find(FIND_STRUCTURES, {
+        filter: (structure) => structure.hits < structure.hitsMax
+    }).length > 0;
+};
+
+Room.prototype.getBuilderWorkRoads = function() {
+    return this.find(FIND_CONSTRUCTION_SITES, {
+        filter: (site) => site.structureType === STRUCTURE_ROAD
+    }).length > 0;
+} 
+
+Room.prototype.getBuilderWorkSpawn = function() {
+    const spawnConstructionSites = this.find(FIND_CONSTRUCTION_SITES, {
+        filter: (site) => site.structureType === STRUCTURE_SPAWN
+    });
+
+    if (spawnConstructionSites.length > 0) {
+        return true;
+    }
+
+    return false;
+};
