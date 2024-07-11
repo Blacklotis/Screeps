@@ -3,7 +3,7 @@ const { DEBUGGING } = require('constants');
 Creep.prototype.convertRoom = function(conversionCallback) {
     if (typeof conversionCallback !== 'function') {
         console.log('Invalid conversion callback provided');
-        return;
+        return false;
     }
 
     const structures = this.room.find(FIND_STRUCTURES);
@@ -37,6 +37,7 @@ Creep.prototype.convertRoom = function(conversionCallback) {
     });
 
     console.log(`Conversion completed for room: ${this.room.name}`);
+    return true;
 };
 
 Creep.prototype.claimRoom = function() {
@@ -56,5 +57,33 @@ Creep.prototype.claimRoom = function() {
         console.log(`${this.name}: Successfully claimed controller in room ${this.room.name}`);
     } else {
         console.log(`${this.name}: Error claiming controller. Claim result: ${result}`);
+    }
+};
+
+Creep.prototype.buildSpawn = function() {
+    const spawnConstructionSite = this.pos.findClosestByPath(FIND_CONSTRUCTION_SITES, {
+        filter: (site) => site.structureType === STRUCTURE_SPAWN
+    });
+
+    if (!spawnConstructionSite) {
+        console.log(`${this.name} could not find a spawn construction site.`);
+        return ERR_INVALID_TARGET;
+    }
+
+    // Move to the construction site and build the spawn
+    if (this.pos.inRangeTo(spawnConstructionSite, 3)) {
+        const buildResult = this.build(spawnConstructionSite);
+        if (buildResult === OK) {
+            console.log(`${this.name} is building the spawn.`);
+        } else {
+            console.log(`${this.name} failed to build the spawn: ${buildResult}`);
+        }
+        return buildResult;
+    } else {
+        const moveResult = this.moveTo(spawnConstructionSite, { visualizePathStyle: { stroke: '#ffffff' } });
+        if (moveResult === ERR_NO_PATH) {
+            console.log(`${this.name} could not find a path to the spawn construction site.`);
+        }
+        return moveResult;
     }
 };

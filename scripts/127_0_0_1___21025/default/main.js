@@ -8,48 +8,14 @@ require('prototype.spawn');
 require('prototype.room');
 require('prototype.roomPosition');
 const metrics = require('metrics');
-const { BODY_CONFIGURATION, DEBUGGING, OVERLAY_ROAD_CONSTRUCTION, MIN_HARVESTERS, MIN_BUILDERS, MIN_FIGHTERS, MIN_HEALERS } = require('constants');
-
-function assignCreepsToRooms() {
-    const allRoomsNeeds = {};
-
-    // Collect needs for all rooms
-    for (const roomName in Game.rooms) {
-        const room = Game.rooms[roomName];
-        allRoomsNeeds[roomName] = room.calculateCreepNeeds();
-    }
-
-    const creeps = _.filter(Game.creeps, (creep) => creep.memory.role === 'builder' || creep.memory.role === 'harvester');
-
-    for (const creep of creeps) {
-        let highestNeedRoom = null;
-        let highestNeed = 0;
-
-        for (const roomName in allRoomsNeeds) {
-            const roomNeeds = allRoomsNeeds[roomName];
-
-            if (creep.memory.role === 'builder' && roomNeeds.builders > highestNeed) {
-                highestNeed = roomNeeds.builders;
-                highestNeedRoom = roomName;
-            } else if (creep.memory.role === 'harvester' && roomNeeds.harvesters > highestNeed) {
-                highestNeed = roomNeeds.harvesters;
-                highestNeedRoom = roomName;
-            }
-        }
-
-        if (highestNeedRoom) {
-            creep.memory.targetRoom = highestNeedRoom;
-
-            // Decrement the need in the assigned room
-            if (creep.memory.role === 'builder') {
-                allRoomsNeeds[highestNeedRoom].builders--;
-            } else if (creep.memory.role === 'harvester') {
-                allRoomsNeeds[highestNeedRoom].harvesters--;
-            }
-        }
-    }
-}
-
+const { 
+    DEBUGGING, 
+    HARVESTER,
+    PRIEST,
+    BUILDER,
+    FIGHTER,
+    HEALER
+} = require('constants');
 
 module.exports.loop = function () {
 
@@ -66,29 +32,28 @@ module.exports.loop = function () {
         //room.logMetrics();
         //room.createPathToExit(FIND_EXIT_LEFT);
         //room.overlayBuildableCheckerboardPositions();
-        //room.clearPlannedExtensions();
-        //room.planExtensions(5);
+        //room.clearPlannedPower();
+        //room.planPower(2);
         //room.clearRoadConstruction();
         //room.planRoads();
-        //room.createConstructionSite(12, 45, STRUCTURE_ROAD);
+        //room.createConstructionSite(12, 45, STRUCTURE_ROAD)
+        //room.planSpawnConstruction();
     }
     
     // Creep logic
     for (var name in Game.creeps) {
         var creep = Game.creeps[name];
-        if (creep.memory.role == 'harvester') {
+        if (creep.memory.role == HARVESTER) {
             roleHarvester.run(creep);
-        } else if (creep.memory.role == 'builder') {
+        } else if (creep.memory.role == BUILDER) {
             roleBuilder.run(creep);
-        } else if (creep.memory.role == 'fighter') {
+        } else if (creep.memory.role == FIGHTER) {
             roleFighter.run(creep);
-        } else if (creep.memory.role == 'healer') {
+        } else if (creep.memory.role == HEALER) {
             roleHealer.run(creep);
-        }else if (creep.memory.role == 'priest') {
+        }else if (creep.memory.role == PRIEST) {
             rolePriest.run(creep);
         }
-
-
     }
 
     // Spawn logic

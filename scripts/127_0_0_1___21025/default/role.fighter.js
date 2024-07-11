@@ -23,7 +23,7 @@ var roleBuilder = {
     },
 
     chooseTask: function(creep) {
-        if (false) {
+        if (true) {
             creep.memory.state = creep.states.ATTACK;
         } else{
             creep.memory.state = creep.states.IDLE;  
@@ -33,10 +33,11 @@ var roleBuilder = {
     takeAction: function(creep) {
         switch (creep.memory.state) {
             case creep.states.ATTACK:
-                const roomName = creep.room.getLeftRoomName();
+                const roomName = 'W4N5';//creep.room.getLeftRoomName();
                 //creep.moveToRoom(roomName);
+                //creep.moveToFlag('attack');
                 creep.clearRoom();
-                //this.chooseTask(creep);
+                this.chooseTask(creep);
                 break;
             case creep.states.IDLE:
                 creep.idle();

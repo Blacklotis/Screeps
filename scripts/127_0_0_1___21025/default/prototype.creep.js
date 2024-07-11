@@ -1,11 +1,16 @@
 const { DEBUGGING } = require('constants');
-require('navigation');
 
 Creep.prototype.states = {
     ATTACK: '⚔️',
     BUILD_EXTENSIONS: '🚧🔋',
     BUILD_ROADS: '🚧🛣️',
     BUILD_SPAWN: '🚧🏠',
+    BUILD_STORAGE: '🚧📦',
+    BUILD_LINK: '🚧↔️',
+    BUILD_TRANSFER: '🚧🛜',
+    CHARGE_STORAGE: '📦',
+    CHARGE_LINK: '↔️',
+    CHARGE_TRANSFER: '🛜',
     CHARGE_CONTROLLER: '⚡',
     CHARGE_EXTENSIONS: '🔋',
     CHARGE_SPAWN: '🏠',
@@ -70,4 +75,38 @@ Creep.prototype.moveToRoom = function(targetRoom) {
         return true;
     }
     return false;
+};
+
+Creep.prototype.moveToFlag = function(flagName) {
+    const flag = Game.flags[flagName];
+    
+    if (!flag) {
+        console.log(`${this.name} could not find flag: ${flagName}`);
+        return ERR_INVALID_TARGET;
+    }
+    
+    const moveResult = this.moveTo(flag, { visualizePathStyle: { stroke: '#ffffff' } });
+    
+    switch (moveResult) {
+        case OK:
+            console.log(`${this.name} is moving to flag: ${flagName}`);
+            break;
+        case ERR_TIRED:
+            console.log(`${this.name} is tired.`);
+            break;
+        case ERR_NO_PATH:
+            console.log(`${this.name} could not find a path to flag: ${flagName}`);
+            break;
+        case ERR_INVALID_TARGET:
+            console.log(`${this.name} received an invalid target while trying to move to flag: ${flagName}`);
+            break;
+        case ERR_NO_BODYPART:
+            console.log(`${this.name} does not have a MOVE body part.`);
+            break;
+        default:
+            console.log(`${this.name} encountered an unknown error (${moveResult}) while moving to flag: ${flagName}`);
+            break;
+    }
+
+    return moveResult;
 };

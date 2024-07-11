@@ -14,6 +14,75 @@ const EXTENSIONS_PER_RCL = {
 //#endregion
 
 //#region Architecting
+Room.prototype.calculateBuildablePositions = (spawn, radius) => {
+    const positions = [];
+    for (let dx = -radius; dx <= radius; dx++) {
+        for (let dy = -radius; dy <= radius; dy++) {
+            if (Math.sqrt(dx*dx + dy*dy) >= radius) {
+                const x = spawn.pos.x + dx;
+                const y = spawn.pos.y + dy;
+                if (x >= 0 && x < 50 && y >= 0 && y < 50) {
+                    positions.push(new RoomPosition(x, y, this.name));
+                }
+            }
+        }
+    }
+    return positions;
+};
+
+Room.prototype.isValidBuildPosition = function(pos) {
+    const room = this;
+
+    const isWithinBounds = (x, y) => x >= 0 && x < 50 && y >= 0 && y < 50;
+
+    const isValidPos = (pos) => {
+        const x = pos.x;
+        const y = pos.y;
+
+        if (!isWithinBounds(x, y)) return false;
+
+        const isWall = room.getTerrain().get(x, y) === TERRAIN_MASK_WALL;
+        const isOccupied = room.lookForAt(LOOK_STRUCTURES, pos).length > 0 ||
+                           room.lookForAt(LOOK_CONSTRUCTION_SITES, pos).length > 0;
+        return !isWall && !isOccupied && pos.isValid();
+    };
+
+    if (!isValidPos(pos)) return false;
+
+    const isOnRoad = room.lookForAt(LOOK_STRUCTURES, pos).some(structure => structure.structureType === STRUCTURE_ROAD) ||
+                     room.lookForAt(LOOK_CONSTRUCTION_SITES, pos).some(site => site.structureType === STRUCTURE_ROAD);
+
+    return !isOnRoad;
+};
+
+Room.prototype.planSpawnConstruction = function() {
+    const sources = this.find(FIND_SOURCES);
+
+    if (sources.length === 0) {
+        console.log('No sources found in the room.');
+        return ERR_NOT_FOUND;
+    }
+
+    // Try to place the spawn roughly in the middle of all sources
+    let xSum = 0;
+    let ySum = 0;
+    for (const source of sources) {
+        xSum += source.pos.x;
+        ySum += source.pos.y;
+    }
+    const centerX = Math.round(xSum / sources.length);
+    const centerY = Math.round(ySum / sources.length);
+    const centralPos = new RoomPosition(centerX, centerY, this.name);
+
+    const result = this.createConstructionSite(centralPos, STRUCTURE_SPAWN);
+    if (result === OK) {
+        console.log(`Created a spawn construction site at (${centerX}, ${centerY}).`);
+    } else {
+        console.log(`Failed to create a spawn construction site: ${result}`);
+    }
+    return result;
+};
+
 Room.prototype.clearRoadConstruction = function() {
     const roadConstructionSites = this.find(FIND_CONSTRUCTION_SITES, {
         filter: (site) => site.structureType === STRUCTURE_ROAD
@@ -74,7 +143,7 @@ Room.prototype.planRoads = function(isPlanning) {
         }
 };
 
-Room.prototype.clearPlannedExtensions = function() {
+Room.prototype.clearPlannedPower = function() {
     const plannedExpanders = this.find(FIND_CONSTRUCTION_SITES, {
         filter: site => site.structureType === STRUCTURE_EXTENSION
     });
@@ -83,7 +152,7 @@ Room.prototype.clearPlannedExtensions = function() {
     }
 };
 
-Room.prototype.planExtensions = function(radius) {
+Room.prototype.planPower = function(radius) {
     const spawns = this.find(FIND_MY_SPAWNS);
     const controllerLevel = this.controller ? this.controller.level : 0;
     const maxExtensions = EXTENSIONS_PER_RCL[controllerLevel] || 0;
@@ -100,22 +169,6 @@ Room.prototype.planExtensions = function(radius) {
 
     let extensionsPlaced = 0;
 
-    const calculatePositions = (spawn, radius) => {
-        const positions = [];
-        for (let dx = -radius; dx <= radius; dx++) {
-            for (let dy = -radius; dy <= radius; dy++) {
-                if (Math.sqrt(dx*dx + dy*dy) >= radius) {
-                    const x = spawn.pos.x + dx;
-                    const y = spawn.pos.y + dy;
-                    if (x >= 0 && x < 50 && y >= 0 && y < 50) {
-                        positions.push(new RoomPosition(x, y, this.name));
-                    }
-                }
-            }
-        }
-        return positions;
-    };
-
     for (const spawn of spawns) {
         let currentRadius = radius;
         while (extensionsPlaced < maxExtensions) {
@@ -123,11 +176,16 @@ Room.prototype.planExtensions = function(radius) {
             for (const pos of positions) {
                 if (extensionsPlaced >= maxExtensions) break;
                 if (this.isValidBuildPosition(pos)) {
-                    this.createConstructionSite(pos, STRUCTURE_EXTENSION);                    
+                    // Place storage for every fifth extension
+                    if (extensionsPlaced % 5 === 0) {
+                        this.createConstructionSite(pos, STRUCTURE_STORAGE);
+                    } else {
+                        this.createConstructionSite(pos, STRUCTURE_EXTENSION);
+                    }
+                    extensionsPlaced++;
                 } else {
                     this.createConstructionSite(pos, STRUCTURE_ROAD);
                 }
-                extensionsPlaced++;
             }
             currentRadius++;
         }
@@ -257,31 +315,6 @@ Room.prototype.removeAllRoads = function() {
     return;
 };
 
-Room.prototype.isValidBuildPosition = function(pos) {
-    const room = this;
-
-    const isWithinBounds = (x, y) => x >= 0 && x < 50 && y >= 0 && y < 50;
-
-    const isValidPos = (pos) => {
-        const x = pos.x;
-        const y = pos.y;
-
-        if (!isWithinBounds(x, y)) return false;
-
-        const isWall = room.getTerrain().get(x, y) === TERRAIN_MASK_WALL;
-        const isOccupied = room.lookForAt(LOOK_STRUCTURES, pos).length > 0 ||
-                           room.lookForAt(LOOK_CONSTRUCTION_SITES, pos).length > 0;
-        return !isWall && !isOccupied && pos.isValid();
-    };
-
-    if (!isValidPos(pos)) return false;
-
-    const isOnRoad = room.lookForAt(LOOK_STRUCTURES, pos).some(structure => structure.structureType === STRUCTURE_ROAD) ||
-                     room.lookForAt(LOOK_CONSTRUCTION_SITES, pos).some(site => site.structureType === STRUCTURE_ROAD);
-
-    return !isOnRoad;
-};
-
 Room.prototype.findRallyPoint = function() {
     const spawns = this.find(FIND_MY_SPAWNS);
 
@@ -329,4 +362,40 @@ Room.prototype.midpoint = function(posOne, posTwo) {
     //console.log(`Midpoint: (${midX}, ${midY})`);
     return new RoomPosition(midX, midY, this.name);
 }
+
+Room.prototype.getSurroundingRooms = function(roomEdge) {
+
+    if (roomEdge !== FIND_EXIT_TOP 
+        && roomEdge!== FIND_EXIT_RIGHT
+        && roomEdge!== FIND_EXIT_BOTTOM
+        && roomEdge!== FIND_EXIT_LEFT ) {
+            return false;
+        }
+    const [x, y] = this.name.match(/([WE]\d+)([NS]\d+)/).slice(1);
+    const xNum = parseInt(x.slice(1));
+    const newX = x[0] === 'W' ? xNum + 1 : xNum - 1;
+    const newXStr = x[0] === 'W' ? `W${newX}` : `E${newX}`;
+    return `${newXStr}${y}`;
+};
+
+Room.prototype.calculateCreepNeeds = function() {
+    const metrics = this.collectMetrics();
+    const needs = {
+        builders: 0,
+        harvesters: 0
+    };
+
+    // Example logic to calculate needs based on metrics
+    if (metrics.constructionSites) {
+        needs.builders = Math.ceil(Object.values(metrics.constructionSites).reduce((a, b) => a + b, 0) / 5); // 1 builder per 5 construction sites
+    }
+
+    if (metrics.structures['container']) {
+        needs.harvesters = metrics.structures['container'] * 2; // 2 harvesters per container
+    } else {
+        needs.harvesters = 2; // Default to 2 harvesters if no containers
+    }
+
+    return needs;
+};
 //#endregion

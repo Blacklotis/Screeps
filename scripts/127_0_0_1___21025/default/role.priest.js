@@ -22,7 +22,7 @@ var rolePriest = {
     },
 
     chooseTask: function(creep) {
-        if (true) {
+        if (false) {
             creep.memory.state = creep.states.CONVERT;
         } else{
             creep.memory.state = creep.states.IDLE;  
@@ -32,11 +32,11 @@ var rolePriest = {
     takeAction: function(creep) {
         switch (creep.memory.state) {
             case creep.states.CONVERT:
-                const roomName = creep.room.getLeftRoomName();
-                //creep.moveToRoom(roomName);
+                const roomName = 'W4N5';//creep.room.getLeftRoomName();
+                creep.moveToRoom(roomName);
+                creep.convertRoom(logItemDetails);
                 creep.claimRoom();
-                //creep.convertRoom(logItemDetails);
-                //this.chooseTask(creep);
+                this.chooseTask(creep);
                 break;
             case creep.states.IDLE:
                 creep.idle();

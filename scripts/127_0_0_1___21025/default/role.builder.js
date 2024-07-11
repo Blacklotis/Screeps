@@ -27,13 +27,19 @@ var roleBuilder = {
     },
 
     chooseTask: function(creep) {
-        if (creep.room.getBuilderWorkRepair() > 0) {
-            creep.memory.state = creep.states.REPAIRING;
-        }else if (creep.room.getBuilderWorkRoads() > 0) {
-            creep.memory.state = creep.states.BUILD_ROADS;
-        }else if (creep.room.getBuilderWorkExtensions() > 0) {
+        if (creep.room.getBuilderWorkExtensions()) {
             creep.memory.state = creep.states.BUILD_EXTENSIONS;
-        }else {
+        } else if (creep.room.getBuilderWorkLinks()) {
+            creep.memory.state = creep.states.BUILD_LINKS;
+        } else if (creep.room.getBuilderWorkStorage()) {
+            creep.memory.state = creep.states.BUILD_STORAGE;
+        } else if (creep.room.getBuilderWorkTransfers()) {
+            creep.memory.state = creep.states.BUILD_TRANSFERS;
+        } else if (creep.room.getBuilderWorkRoads() > 0) {
+            creep.memory.state = creep.states.BUILD_ROADS
+        } else if (creep.room.getBuilderWorkRepair()) {
+            creep.memory.state = creep.states.REPAIRING;
+        } else {
             creep.memory.state = creep.states.CHARGE_CONTROLLER;  
         }
     },
@@ -53,25 +59,41 @@ var roleBuilder = {
             case creep.states.BUILD_ROADS:
                 if(!creep.buildRoads()) {
                     this.chooseTask(creep);
-                };
+                }
                 break;
             case creep.states.BUILD_EXTENSIONS:
                 if(!creep.buildExtensions()) {
                     this.chooseTask(creep);
-                };
+                }
+                break;
+            case creep.states.BUILD_LINKS:
+                if(!creep.buildLinks()) {
+                    this.chooseTask(creep);
+                }
+                break;
+            case creep.states.BUILD_STORAGE:
+                if(!creep.buildStorage()) {
+                    this.chooseTask(creep);
+                }
+                break;
+            case creep.states.BUILD_TRANSFERS:
+                if(!creep.buildTransfers()) {
+                    this.chooseTask(creep);
+                }
                 break;
             case creep.states.BUILD_SPAWN:
-                if(!creep.repairStructures()) {
+                if(!creep.buildSpawn()) {
                     this.chooseTask(creep);
-                };
+                }
                 break;
             case creep.states.REPAIRING:
                 if(!creep.repairStructures()) {
                     this.chooseTask(creep);
-                };
+                }
                 break;
         }
     }
+    
     
 };
 
